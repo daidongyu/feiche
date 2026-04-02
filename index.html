@@ -8,7 +8,7 @@
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <title>翠泣1.0</title>
+    <title>翠泣1.00</title>
     <style>
       * {
         margin: 0;
@@ -587,6 +587,47 @@
         }
       }
 
+      /* PC端按键说明 */
+      .pc-controls {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-radius: 12px;
+        padding: 12px 20px;
+        display: none;
+        z-index: 200;
+      }
+      
+      .pc-key-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .pc-key-row {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .pc-key-row .key {
+        display: inline-block;
+        min-width: 24px;
+        padding: 3px 6px;
+        background: rgba(0, 255, 136, 0.2);
+        border: 1px solid rgba(0, 255, 136, 0.5);
+        border-radius: 4px;
+        color: #00ff88;
+        font-weight: bold;
+        text-align: center;
+        font-size: 12px;
+      }
+      
       /* PC端适配 */
       @media (min-width: 1024px) {
         #gameCanvas {
@@ -594,6 +635,9 @@
         }
         #ui {
           height: 100vh;
+        }
+        .pc-controls {
+          display: block;
         }
       }
     </style>
@@ -699,6 +743,17 @@
       <div class="level-transition" id="levelTransition">
         <h2 id="transitionTitle">关卡完成!</h2>
         <p id="transitionDesc">准备进入下一关...</p>
+      </div>
+      
+      <!-- PC端按键说明 -->
+      <div class="pc-controls" id="pcControls">
+        <div class="pc-key-group">
+          <div class="pc-key-row"><span class="key">A</span><span class="key">D</span> 移动</div>
+          <div class="pc-key-row"><span class="key">J</span> 攻击 <span class="key">K</span> 跳跃 <span class="key">L</span> 闪避</div>
+          <div class="pc-key-row"><span class="key">Q</span><span class="key">W</span><span class="key">E</span> 切武器</div>
+          <div class="pc-key-row"><span class="key">1</span><span class="key">2</span><span class="key">3</span> 技能</div>
+          <div class="pc-key-row"><span class="key">U</span> 小终结(30连) <span class="key">I</span> 大终结(100连)</div>
+        </div>
       </div>
     </div>
 
@@ -912,56 +967,86 @@
         }
       }
 
+      // ==================== 冲击波效果 ====================
+      class ShockWave {
+        constructor() {
+          this.waves = [];
+        }
+        
+        add(x, y, color, maxRadius) {
+          this.waves.push({
+            x, y, color, 
+            radius: 10, 
+            maxRadius: maxRadius || 100,
+            alpha: 1,
+            width: 8
+          });
+        }
+        
+        update() {
+          for (let i = this.waves.length - 1; i >= 0; i--) {
+            const w = this.waves[i];
+            w.radius += 8;
+            w.alpha -= 0.08;
+            w.width -= 0.3;
+            if (w.alpha <= 0 || w.width <= 0) {
+              this.waves.splice(i, 1);
+            }
+          }
+        }
+        
+        draw(ctx) {
+          for (const w of this.waves) {
+            ctx.save();
+            ctx.strokeStyle = w.color.replace(')', `, ${w.alpha})`).replace('rgb', 'rgba');
+            ctx.lineWidth = Math.max(1, w.width);
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = w.color;
+            ctx.beginPath();
+            ctx.arc(w.x, w.y, w.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+          ctx.shadowBlur = 0;
+        }
+      }
+
       // ==================== 配置 ====================
       const WEAPONS = {
         DUAL_BLADE: {
           name: '双刀',
-          damage: 25,
-          range: 120,
+          damage: 45,
+          range: 140,
           color: '#00ff88',
-          knockback: 6,
+          knockback: 8,
         },
         DUAL_DAGGER: {
           name: '双匕',
-          damage: 40,
-          range: 90,
+          damage: 65,
+          range: 100,
           color: '#ff4444',
-          backstabBonus: 3,
+          backstabBonus: 4,
         },
         DUAL_HOOK: {
           name: '双钩',
-          damage: 32,
-          range: 180,
+          damage: 55,
+          range: 200,
           color: '#ffaa00',
-          knockback: 15,
+          knockback: 20,
         },
       }
 
       const LEVELS = [
-        {
-          name: '训练场',
-          targetKills: 8,
-          enemyCount: 2,
-          eliteChance: 0,
-          boss: null,
-          colors: { bg: '#0a0a12', ground: '#2d2d3d', accent: '#00ff88' },
-        },
-        {
-          name: '霓虹废墟',
-          targetKills: 12,
-          enemyCount: 3,
-          eliteChance: 0.3,
-          boss: 'destroyer',
-          colors: { bg: '#1a0a2a', ground: '#3d2d4d', accent: '#ff00ff' },
-        },
-        {
-          name: '深渊炼狱',
-          targetKills: 15,
-          enemyCount: 4,
-          eliteChance: 0.5,
-          boss: 'abyss',
-          colors: { bg: '#0a0505', ground: '#3d2020', accent: '#ff4444' },
-        },
+        { name: '训练场', targetKills: 10, enemyCount: 2, eliteChance: 0, boss: null, colors: { bg: '#0a0a12', ground: '#2d2d3d', accent: '#00ff88' }},
+        { name: '废墟都市', targetKills: 12, enemyCount: 3, eliteChance: 0.1, boss: null, colors: { bg: '#1a1a2a', ground: '#2d2d4d', accent: '#4488ff' }},
+        { name: '霓虹迷宫', targetKills: 15, enemyCount: 3, eliteChance: 0.2, boss: 'destroyer', colors: { bg: '#1a0a2a', ground: '#3d2d4d', accent: '#ff00ff' }},
+        { name: '暗影丛林', targetKills: 18, enemyCount: 4, eliteChance: 0.3, boss: null, colors: { bg: '#0a1a0a', ground: '#2d3d2d', accent: '#00ff44' }},
+        { name: '熔岩地狱', targetKills: 20, enemyCount: 4, eliteChance: 0.4, boss: 'destroyer', colors: { bg: '#1a0500', ground: '#3d2020', accent: '#ff4400' }},
+        { name: '虚空裂隙', targetKills: 22, enemyCount: 5, eliteChance: 0.4, boss: 'abyss', colors: { bg: '#0a001a', ground: '#2d1d3d', accent: '#8800ff' }},
+        { name: '机械要塞', targetKills: 25, enemyCount: 5, eliteChance: 0.5, boss: 'destroyer', colors: { bg: '#1a1a1a', ground: '#3d3d3d', accent: '#ffaa00' }},
+        { name: '终焉之地', targetKills: 28, enemyCount: 6, eliteChance: 0.5, boss: 'abyss', colors: { bg: '#0a0000', ground: '#1a0000', accent: '#ff0000' }},
+        { name: '神域入口', targetKills: 30, enemyCount: 6, eliteChance: 0.6, boss: 'destroyer', colors: { bg: '#1a1a0a', ground: '#3d3d2d', accent: '#ffff00' }},
+        { name: '无限深渊', targetKills: 50, enemyCount: 8, eliteChance: 0.7, boss: 'abyss', colors: { bg: '#000000', ground: '#0a0a0a', accent: '#ffffff' }},
       ]
 
       // ==================== 玩家类 ====================
@@ -972,9 +1057,9 @@
           this.vx = 0
           this.vy = 0
           // 移动端增大角色
-          this.scale = isMobile ? 1.4 : 1
-          this.width = 40 * this.scale
-          this.height = 70 * this.scale
+          this.scale = isMobile ? 1.8 : 1.4;  // 更大的大头角色！
+          this.width = 45 * this.scale;
+          this.height = 78 * this.scale;
           this.facing = 1
           this.avatarImg = avatarImg
 
@@ -1233,31 +1318,53 @@
         }
 
         startGrabSkill(game) {
-          this.state = 'skill_grab'
-          this.stateTimer = 0
-          this.skills.grab.cd = this.skills.grab.maxCd
-          game.audio.playSkillSound()
+          this.state = 'skill_grab';
+          this.stateTimer = 0;
+          this.skills.grab.cd = this.skills.grab.maxCd;
+          game.audio.playSkillSound();
+          // 抓取起手特效
+          game.particles.emit(this.x + this.facing * 60, this.y - 40, '#ff6600', 25, 5, 25);
         }
 
         handleGrabSkill(game) {
-          if (this.stateTimer === 8) {
+          if (this.stateTimer === 6) {
+            // 抓取向前的特效
+            for (let i = 0; i < 8; i++) {
+              const dist = i * 15;
+              setTimeout(() => {
+                game.particles.emit(
+                  this.x + this.facing * (40 + dist), 
+                  this.y - 40 + Math.sin(i) * 10, 
+                  '#ff6600', 3, 2, 10
+                );
+              }, i * 30);
+            }
+          }
+          
+          if (this.stateTimer === 10) {
             for (const enemy of game.enemies) {
-              const dist = Math.abs(enemy.x - this.x)
-              if (dist < 80 && !enemy.isBoss) {
-                const damage = 200
-                enemy.takeDamage(damage, 0)
-                enemy.vy = -22
-                enemy.vx = this.facing * 12
-                game.screenShake = 25
-                game.particles.emit(enemy.x, enemy.y, '#ff6600', 30, 12, 50)
-                game.spawnDamageNumber(enemy.x, enemy.y - 60, damage, true)
-                this.addCombo(5)
-                break
+              const dist = Math.abs(enemy.x - this.x);
+              if (dist < 100 && !enemy.isBoss) {
+                const damage = 400;
+                enemy.takeDamage(damage, 0);
+                enemy.vy = -30;
+                enemy.vx = this.facing * 15;
+                game.screenShake = 35;
+                // 爆炸特效
+                game.particles.emit(enemy.x, enemy.y - 30, '#ff6600', 50, 15, 60);
+                game.particles.emit(enemy.x, enemy.y - 30, '#ffff00', 30, 12, 40);
+                game.particles.emit(enemy.x, enemy.y - 30, '#ffffff', 20, 10, 30);
+                // 冲击波
+                game.shockwaves.add(enemy.x, enemy.y, '#ff6600', 180);
+                game.shockwaves.add(enemy.x, enemy.y - 30, '#ffff00', 120);
+                game.spawnDamageNumber(enemy.x, enemy.y - 60, damage, true);
+                this.addCombo(8);
+                break;
               }
             }
           }
 
-          if (this.stateTimer > 22) this.state = 'idle'
+          if (this.stateTimer > 28) this.state = 'idle';
         }
 
         handleAirState(input, game) {
@@ -1317,6 +1424,16 @@
         performAttackHit(game) {
           const weapon = WEAPONS[this.currentWeapon]
           const hitX = this.x + this.facing * weapon.range * 0.5
+          
+          // 攻击冲击波效果
+          if (this.stateTimer === 2) {
+            game.shockwaves.add(
+              this.x + this.facing * 50,
+              this.y + this.height * 0.5,
+              weapon.color,
+              weapon.range * 0.8
+            )
+          }
 
           for (const enemy of game.enemies) {
             const distX = Math.abs(enemy.x - hitX)
@@ -1408,41 +1525,49 @@
 
         executeFinisher(isBig, game) {
           if (isBig) {
-            game.screenShake = 50
-            game.showFinisherText('ULTIMATE!!!')
-            game.slash.addUltimateSlash(this.x, this.y - 30)
-            game.particles.emit(this.x, this.y - 40, '#ff00ff', 60, 15, 80)
-
+            game.screenShake = 80;
+            game.showFinisherText('∞ ULTIMATE ∞');
+            // 超级炸裂特效
+            game.slash.addUltimateSlash(this.x, this.y - 30);
+            // 多层粒子爆发
+            for (let i = 0; i < 5; i++) {
+              setTimeout(() => {
+                game.particles.emit(this.x, this.y - 40, '#ff00ff', 40 + i * 10, 15 + i * 3, 60);
+                game.particles.emit(this.x, this.y - 40, '#ff0088', 30 + i * 8, 12 + i * 2, 50);
+                game.particles.emit(this.x, this.y - 40, '#ffffff', 20 + i * 5, 10 + i * 2, 40);
+                game.shockwaves.add(this.x, this.y - 40, '#ff00ff', 100 + i * 80);
+              }, i * 100);
+            }
+            // 全屏伤害
             for (const enemy of game.enemies) {
-              enemy.takeDamage(1000, 0)
-              enemy.vy = -30
-              game.onEnemyKilled()
+              enemy.takeDamage(3000, 0);
+              enemy.vy = -40;
+              game.onEnemyKilled();
             }
           } else {
-            game.screenShake = 25
-            game.showFinisherText('FINISHER!')
-            const weapon = WEAPONS[this.currentWeapon]
-            game.slash.add(
-              this.x,
-              this.y - 30,
-              this.facing > 0 ? 0.3 : Math.PI - 0.3,
-              280,
-              weapon.color,
-              18,
-            )
-            game.particles.emit(this.x, this.y - 40, weapon.color, 40, 10, 45)
+            game.screenShake = 40;
+            game.showFinisherText('⚔ FINISHER ⚔');
+            const weapon = WEAPONS[this.currentWeapon];
+            // 超级斩击
+            game.slash.add(this.x, this.y - 35, this.facing > 0 ? 0.3 : Math.PI - 0.3, 350, weapon.color, 25, 'ult');
+            game.slash.add(this.x, this.y - 25, this.facing > 0 ? 0.2 : Math.PI - 0.2, 320, '#ffffff', 20, 'ult');
+            // 爆发粒子
+            game.particles.emit(this.x + this.facing * 100, this.y - 40, weapon.color, 60, 15, 60);
+            game.particles.emit(this.x + this.facing * 100, this.y - 40, '#ffffff', 40, 12, 40);
+            game.shockwaves.add(this.x + this.facing * 100, this.y + 10, weapon.color, 250);
 
             for (const enemy of game.enemies) {
-              const dist = Math.abs(enemy.x - this.x)
-              if (dist < 280) {
-                enemy.takeDamage(180, this.facing * 18)
-                game.spawnDamageNumber(enemy.x, enemy.y - 60, 180, true)
+              const dist = Math.abs(enemy.x - this.x);
+              if (dist < 350) {
+                enemy.takeDamage(400, this.facing * 25);
+                game.particles.emit(enemy.x, enemy.y - 30, weapon.color, 15, 8, 25);
+                game.spawnDamageNumber(enemy.x, enemy.y - 60, 400, true);
               }
             }
           }
 
-          game.audio.playFinisherSound(isBig)
-          this.combo = 0
+          game.audio.playFinisherSound(isBig);
+          this.combo = 0;
         }
 
         addCombo(amount) {
@@ -1541,80 +1666,83 @@
           ctx.strokeRect(-12, bodyY + 6, 24, 26)
           ctx.globalAlpha = 1
 
-          // ===== 头像（放大版）=====
-          const headY = -65 + bobOffset
+          // ===== 大头儿子风格头像 =====
+          const headY = -75 + bobOffset  // 更高的头部位置
           const hasAvatar =
             this.avatarImg &&
             this.avatarImg.complete &&
             this.avatarImg.naturalWidth > 0
 
+          // 头部光晕
+          ctx.shadowBlur = 35
+          ctx.shadowColor = weapon.color
+
           if (hasAvatar) {
-            // 头像圆圈背景
+            // 大圆圈背景
             ctx.beginPath()
-            ctx.arc(0, headY, 16, 0, Math.PI * 2)
+            ctx.arc(0, headY, 24, 0, Math.PI * 2)  // 更大的头！
             ctx.fillStyle = '#000'
             ctx.fill()
             ctx.strokeStyle = weapon.color
-            ctx.lineWidth = 3
+            ctx.lineWidth = 4
             ctx.stroke()
 
-            // 裁剪绘制头像
+            // 裁剪绘制头像 - 大头！
             ctx.save()
             ctx.beginPath()
-            ctx.arc(0, headY, 14, 0, Math.PI * 2)
+            ctx.arc(0, headY, 21, 0, Math.PI * 2)
             ctx.clip()
             try {
-              ctx.drawImage(this.avatarImg, -14, headY - 14, 28, 28)
+              ctx.drawImage(this.avatarImg, -21, headY - 21, 42, 42)
             } catch (e) {
               ctx.fillStyle = weapon.color
-              ctx.fillRect(-14, headY - 14, 28, 28)
+              ctx.fillRect(-21, headY - 21, 42, 42)
             }
             ctx.restore()
 
-            // 发光边框
-            ctx.shadowBlur = 20
-            ctx.shadowColor = weapon.color
+            // 外发光
             ctx.strokeStyle = weapon.color
-            ctx.lineWidth = 2
+            ctx.lineWidth = 3
             ctx.beginPath()
-            ctx.arc(0, headY, 16, 0, Math.PI * 2)
+            ctx.arc(0, headY, 24, 0, Math.PI * 2)
             ctx.stroke()
-            ctx.shadowBlur = 0
           } else {
-            // 备用头像
+            // 备用大头头像
             ctx.fillStyle = '#2d3436'
             ctx.beginPath()
-            ctx.arc(0, headY, 15, 0, Math.PI * 2)
+            ctx.arc(0, headY, 22, 0, Math.PI * 2)
             ctx.fill()
 
             ctx.fillStyle = '#1a1a2e'
             ctx.beginPath()
-            ctx.arc(0, headY - 2, 16, Math.PI, 0)
+            ctx.arc(0, headY - 3, 24, Math.PI, 0)
             ctx.fill()
 
             ctx.fillStyle = '#f5d0b0'
             ctx.beginPath()
-            ctx.arc(0, headY + 2, 12, 0, Math.PI * 2)
+            ctx.arc(0, headY + 4, 18, 0, Math.PI * 2)
             ctx.fill()
 
             ctx.fillStyle = '#000'
-            const eyeDir = this.facing > 0 ? 4 : -4
+            const eyeDir = this.facing > 0 ? 6 : -6
             ctx.beginPath()
-            ctx.arc(eyeDir, headY + 2, 3, 0, Math.PI * 2)
+            ctx.arc(eyeDir, headY + 4, 4, 0, Math.PI * 2)
             ctx.fill()
 
             ctx.strokeStyle = '#c0392b'
-            ctx.lineWidth = 2
+            ctx.lineWidth = 3
             ctx.beginPath()
-            ctx.arc(0, headY + 5, 6, 0.2, Math.PI - 0.2)
+            ctx.arc(0, headY + 9, 9, 0.2, Math.PI - 0.2)
             ctx.stroke()
 
             ctx.strokeStyle = weapon.color
-            ctx.lineWidth = 2
+            ctx.lineWidth = 3
             ctx.beginPath()
-            ctx.arc(0, headY, 15, 0, Math.PI * 2)
+            ctx.arc(0, headY, 22, 0, Math.PI * 2)
             ctx.stroke()
           }
+          
+          ctx.shadowBlur = 0
 
           // 围巾
           if (['dodge', 'jump', 'skill_dash'].includes(this.state)) {
@@ -1633,8 +1761,26 @@
             ctx.globalAlpha = 1
           }
 
+          // 武器攻击光晕
+          if (isAttacking) {
+            ctx.globalAlpha = 0.4 + Math.sin(this.stateTimer * 0.8) * 0.2;
+            const pulseSize = 60 + this.stateTimer * 3;
+            const grad = ctx.createRadialGradient(
+              this.facing * 40, -15, 0,
+              this.facing * 40, -15, pulseSize
+            );
+            grad.addColorStop(0, weapon.color);
+            grad.addColorStop(0.5, weapon.color.replace(')', ', 0.5)').replace('rgb', 'rgba'));
+            grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(this.facing * 40, -15, pulseSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          }
+          
           // 武器
-          ctx.translate(0, bodyY + 18)
+          ctx.translate(0, bodyY + 22)
           this.drawWeapon(ctx, weapon, isAttacking)
         }
 
@@ -1646,146 +1792,264 @@
           ctx.shadowColor = weapon.color
 
           if (this.currentWeapon === 'DUAL_BLADE') {
-            // 左刀
-            ctx.save()
-            ctx.rotate(baseAngle + swing - 0.4)
-            ctx.fillStyle = '#444'
-            ctx.fillRect(-28, -5, 22, 10)
-            ctx.fillStyle = '#666'
-            ctx.fillRect(-10, -8, 8, 16)
-            const bladeGrad = ctx.createLinearGradient(0, -6, 0, 6)
-            bladeGrad.addColorStop(0, '#e8e8e8')
-            bladeGrad.addColorStop(0.5, '#fff')
-            bladeGrad.addColorStop(1, '#a0a0a0')
-            ctx.fillStyle = bladeGrad
-            ctx.beginPath()
-            ctx.moveTo(-6, -6)
-            ctx.lineTo(55, 0)
-            ctx.lineTo(-6, 6)
-            ctx.closePath()
-            ctx.fill()
-            ctx.strokeStyle = weapon.color
-            ctx.lineWidth = 2
-            ctx.stroke()
-            ctx.restore()
+            // 双刀光晕
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = weapon.color;
+            
+            // 左刀 - 更帅更大
+            ctx.save();
+            ctx.rotate(baseAngle + swing - 0.4);
+            // 柄
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(-32, -7, 28, 14);
+            // 护手
+            ctx.fillStyle = '#444';
+            ctx.fillRect(-12, -12, 10, 24);
+            // 刀刃 - 更大更亮
+            const bladeGrad = ctx.createLinearGradient(0, -9, 0, 9);
+            bladeGrad.addColorStop(0, '#a0d0ff');
+            bladeGrad.addColorStop(0.3, '#ffffff');
+            bladeGrad.addColorStop(0.7, '#e0e0e0');
+            bladeGrad.addColorStop(1, '#808080');
+            ctx.fillStyle = bladeGrad;
+            ctx.beginPath();
+            ctx.moveTo(-8, -8);
+            ctx.lineTo(75, 0);
+            ctx.lineTo(-8, 8);
+            ctx.closePath();
+            ctx.fill();
+            // 刀光
+            ctx.strokeStyle = weapon.color;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            // 能量纹路
+            ctx.strokeStyle = 'rgba(0,255,200,0.8)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(5, -3);
+            ctx.lineTo(60, 0);
+            ctx.lineTo(5, 3);
+            ctx.stroke();
+            // 尖端闪光
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(72, 0, 4, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
 
             // 右刀
-            ctx.save()
-            ctx.rotate(baseAngle - swing + 0.4)
-            ctx.fillStyle = '#444'
-            ctx.fillRect(-28, -5, 22, 10)
-            ctx.fillStyle = '#666'
-            ctx.fillRect(-10, -8, 8, 16)
-            ctx.fillStyle = bladeGrad
-            ctx.beginPath()
-            ctx.moveTo(-6, -6)
-            ctx.lineTo(55, 0)
-            ctx.lineTo(-6, 6)
-            ctx.closePath()
-            ctx.fill()
-            ctx.strokeStyle = weapon.color
-            ctx.lineWidth = 2
-            ctx.stroke()
-            ctx.restore()
+            ctx.save();
+            ctx.rotate(baseAngle - swing + 0.4);
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(-32, -7, 28, 14);
+            ctx.fillStyle = '#444';
+            ctx.fillRect(-12, -12, 10, 24);
+            ctx.fillStyle = bladeGrad;
+            ctx.beginPath();
+            ctx.moveTo(-8, -8);
+            ctx.lineTo(75, 0);
+            ctx.lineTo(-8, 8);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = weapon.color;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(0,255,200,0.8)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(5, -3);
+            ctx.lineTo(60, 0);
+            ctx.lineTo(5, 3);
+            ctx.stroke();
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(72, 0, 4, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+            
+            ctx.shadowBlur = 0;
           } else if (this.currentWeapon === 'DUAL_DAGGER') {
-            const color = this.combo > 40 ? '#ff0044' : weapon.color
-            ctx.shadowColor = color
+            const color = this.combo > 30 ? '#ff0044' : weapon.color;
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = color;
 
-            // 左匕
-            ctx.save()
-            ctx.rotate(baseAngle - 0.5)
-            ctx.fillStyle = '#333'
-            ctx.fillRect(-16, -3, 12, 6)
-            ctx.fillStyle = '#ccc'
-            ctx.beginPath()
-            ctx.moveTo(-4, -4)
-            ctx.lineTo(32, 0)
-            ctx.lineTo(-4, 4)
-            ctx.closePath()
-            ctx.fill()
-            ctx.strokeStyle = color
-            ctx.lineWidth = 2
-            ctx.stroke()
-            ctx.fillStyle = color
-            ctx.globalAlpha = 0.7
-            ctx.fillRect(6, -1, 22, 2)
-            ctx.globalAlpha = 1
-            ctx.restore()
+            // 左匕 - 毒刃风格
+            ctx.save();
+            ctx.rotate(baseAngle - 0.5);
+            // 柄
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(-18, -5, 16, 10);
+            // 护手 - 蝙蝠翼
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.moveTo(-6, -10);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(-6, 10);
+            ctx.fill();
+            // 刀刃
+            const daggerGrad = ctx.createLinearGradient(0, -6, 0, 6);
+            daggerGrad.addColorStop(0, '#e0a0a0');
+            daggerGrad.addColorStop(0.5, '#fff');
+            daggerGrad.addColorStop(1, '#c0c0c0');
+            ctx.fillStyle = daggerGrad;
+            ctx.beginPath();
+            ctx.moveTo(-4, -6);
+            ctx.lineTo(48, 0);
+            ctx.lineTo(-4, 6);
+            ctx.closePath();
+            ctx.fill();
+            // 毒液光效
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            // 血槽
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.9;
+            ctx.fillRect(8, -2, 32, 4);
+            ctx.globalAlpha = 1;
+            // 滴毒效果
+            if (this.combo > 30) {
+              ctx.fillStyle = '#ff0044';
+              ctx.beginPath();
+              ctx.arc(45, 5 + Math.sin(this.animFrame * 0.2) * 3, 3, 0, Math.PI*2);
+              ctx.fill();
+            }
+            ctx.restore();
 
             // 右匕
-            ctx.save()
-            ctx.rotate(baseAngle + 0.5)
-            ctx.fillStyle = '#333'
-            ctx.fillRect(-16, -3, 12, 6)
-            ctx.fillStyle = '#ccc'
-            ctx.beginPath()
-            ctx.moveTo(-4, -4)
-            ctx.lineTo(32, 0)
-            ctx.lineTo(-4, 4)
-            ctx.closePath()
-            ctx.fill()
-            ctx.strokeStyle = color
-            ctx.lineWidth = 2
-            ctx.stroke()
-            ctx.fillStyle = color
-            ctx.globalAlpha = 0.7
-            ctx.fillRect(6, -1, 22, 2)
-            ctx.globalAlpha = 1
-            ctx.restore()
+            ctx.save();
+            ctx.rotate(baseAngle + 0.5);
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(-18, -5, 16, 10);
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.moveTo(-6, -10);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(-6, 10);
+            ctx.fill();
+            ctx.fillStyle = daggerGrad;
+            ctx.beginPath();
+            ctx.moveTo(-4, -6);
+            ctx.lineTo(48, 0);
+            ctx.lineTo(-4, 6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.9;
+            ctx.fillRect(8, -2, 32, 4);
+            ctx.globalAlpha = 1;
+            if (this.combo > 30) {
+              ctx.fillStyle = '#ff0044';
+              ctx.beginPath();
+              ctx.arc(45, 5 + Math.sin(this.animFrame * 0.2 + 1) * 3, 3, 0, Math.PI*2);
+              ctx.fill();
+            }
+            ctx.restore();
+            
+            ctx.shadowBlur = 0;
           } else if (this.currentWeapon === 'DUAL_HOOK') {
             const extend = isAttacking
-              ? Math.sin(this.stateTimer * 0.4) * 25
-              : 0
+              ? Math.sin(this.stateTimer * 0.4) * 40
+              : 0;
+            
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = weapon.color;
 
-            // 左钩
-            ctx.save()
-            ctx.rotate(baseAngle - 0.6)
-            ctx.translate(extend, 0)
-            ctx.strokeStyle = '#666'
-            ctx.lineWidth = 3
-            ctx.beginPath()
-            for (let i = 0; i < 6; i++) {
-              ctx.arc(-18 + i * 8, i % 2 === 0 ? -4 : 4, 4, 0, Math.PI * 2)
+            // 左钩 - 霸气月牙钩
+            ctx.save();
+            ctx.rotate(baseAngle - 0.6);
+            ctx.translate(extend, 0);
+            // 锁链 - 更粗更亮
+            ctx.strokeStyle = '#aaa';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            for (let i = 0; i < 7; i++) {
+              const cx = -25 + i * 10;
+              const cy = (i % 2 === 0 ? -6 : 6);
+              ctx.arc(cx, cy, 6, 0, Math.PI*2);
             }
-            ctx.stroke()
-            ctx.strokeStyle = weapon.color
-            ctx.lineWidth = 4
-            ctx.beginPath()
-            ctx.arc(42, 0, 16, 0.8, 5.5, true)
-            ctx.stroke()
-            ctx.fillStyle = weapon.color
-            ctx.beginPath()
-            ctx.moveTo(54, 9)
-            ctx.lineTo(62, 16)
-            ctx.lineTo(52, 11)
-            ctx.fill()
-            ctx.restore()
+            ctx.stroke();
+            // 连接处
+            ctx.fillStyle = weapon.color;
+            ctx.beginPath();
+            ctx.arc(45, 0, 8, 0, Math.PI*2);
+            ctx.fill();
+            // 钩身
+            ctx.strokeStyle = weapon.color;
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(50, 0);
+            ctx.lineTo(65, 0);
+            ctx.stroke();
+            // 巨大的月牙钩
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.arc(85, 0, 28, 2.3, 5.9, true);
+            ctx.stroke();
+            // 内刃
+            ctx.strokeStyle = '#ffdd00';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(85, 0, 24, 2.5, 5.7, true);
+            ctx.stroke();
+            // 钩尖 - 极锋利
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.moveTo(110, 12);
+            ctx.lineTo(125, 22);
+            ctx.lineTo(112, 8);
+            ctx.fill();
+            ctx.restore();
 
             // 右钩
-            ctx.save()
-            ctx.rotate(baseAngle + 0.6)
-            ctx.translate(extend, 0)
-            ctx.strokeStyle = '#666'
-            ctx.lineWidth = 3
-            for (let i = 0; i < 6; i++) {
-              ctx.arc(-18 + i * 8, i % 2 === 0 ? 4 : -4, 4, 0, Math.PI * 2)
+            ctx.save();
+            ctx.rotate(baseAngle + 0.6);
+            ctx.translate(extend, 0);
+            ctx.strokeStyle = '#aaa';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            for (let i = 0; i < 7; i++) {
+              const cx = -25 + i * 10;
+              const cy = (i % 2 === 0 ? 6 : -6);
+              ctx.arc(cx, cy, 6, 0, Math.PI*2);
             }
-            ctx.stroke()
-            ctx.strokeStyle = weapon.color
-            ctx.lineWidth = 4
-            ctx.beginPath()
-            ctx.arc(42, 0, 16, -0.8, -5.5)
-            ctx.stroke()
-            ctx.fillStyle = weapon.color
-            ctx.beginPath()
-            ctx.moveTo(54, -9)
-            ctx.lineTo(62, -16)
-            ctx.lineTo(52, -11)
-            ctx.fill()
-            ctx.restore()
+            ctx.stroke();
+            ctx.fillStyle = weapon.color;
+            ctx.beginPath();
+            ctx.arc(45, 0, 8, 0, Math.PI*2);
+            ctx.fill();
+            ctx.strokeStyle = weapon.color;
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(50, 0);
+            ctx.lineTo(65, 0);
+            ctx.stroke();
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.arc(85, 0, 28, -2.3, -5.9);
+            ctx.stroke();
+            ctx.strokeStyle = '#ffdd00';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(85, 0, 24, -2.5, -5.7);
+            ctx.stroke();
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.moveTo(110, -12);
+            ctx.lineTo(125, -22);
+            ctx.lineTo(112, -8);
+            ctx.fill();
+            ctx.restore();
+            
+            ctx.shadowBlur = 0;
           }
-
-          ctx.shadowBlur = 0
         }
       }
 
@@ -2211,6 +2475,7 @@
           this.input = new InputHandler()
           this.particles = new ParticleSystem()
           this.slash = new SlashEffect()
+          this.shockwaves = new ShockWave()
 
           this.player = null
           this.enemies = []
@@ -2331,6 +2596,8 @@
           this.enemies = []
           this.boss = null
           this.frameCount = 0
+          this.kills = 0
+          this.waveSpawned = false
 
           document.getElementById('levelBadge').textContent =
             `关卡 ${this.currentLevel + 1} - ${level.name}`
@@ -2338,14 +2605,14 @@
           document.getElementById('killCount').textContent = '0'
           document.getElementById('bossBar').classList.remove('active')
 
-          this.spawnWave()
+          this.spawnWave(true)
         }
 
-        spawnWave() {
+        spawnWave(force = false) {
           const level = LEVELS[this.currentLevel]
 
           // 检查是否达到击杀目标
-          if (this.kills >= level.targetKills && !this.boss) {
+          if (this.kills >= level.targetKills && !this.boss && this.enemies.length === 0) {
             if (level.boss) {
               this.boss = new Boss(
                 this.width - 350,
@@ -2362,9 +2629,12 @@
             return
           }
 
+          // 强制生成或检查是否可以生成
+          if (!force && (this.enemies.length > 0 || this.boss)) return
+
           const count = level.enemyCount
           for (let i = 0; i < count; i++) {
-            const x = 600 + Math.random() * 450
+            const x = 550 + Math.random() * 500
             const isElite = Math.random() < level.eliteChance
             this.enemies.push(
               new Enemy(
@@ -2375,6 +2645,7 @@
               ),
             )
           }
+          this.waveSpawned = true
         }
 
         nextLevel() {
