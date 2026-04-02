@@ -97,9 +97,9 @@
       <div class="avatar-item"><div class="avatar-circle"><canvas id="npc5" width="80" height="80"></canvas></div><div class="label">万总</div></div>
     </div>
     <div class="track-list">
-      <button class="track-btn" onclick="startGame(1)">🌈 赛道一: 彩虹大道<span class="desc">绚丽直道 弯道冲刺</span><span class="difficulty">★★★☆☆</span></button>
-      <button class="track-btn" onclick="startGame(2)">🌸 赛道二: 樱花隧道<span class="desc">粉色花海 浪漫赛道</span><span class="difficulty">★★★★☆</span></button>
-      <button class="track-btn" onclick="startGame(3)">🎪 赛道三: 糖果乐园<span class="desc">五彩赛道 极速狂飙</span><span class="difficulty">★★★★★</span></button>
+      <button class="track-btn" onclick="startGame(1)">🌈 赛道一: 彩虹风车岛<span class="desc">岛屿桥梁 风车旋转</span><span class="difficulty">★★★☆☆</span></button>
+      <button class="track-btn" onclick="startGame(2)">🏙️ 赛道二: 穿梭之城<span class="desc">城市霓虹 8字赛道</span><span class="difficulty">★★★★☆</span></button>
+      <button class="track-btn" onclick="startGame(3)">🏖️ 赛道三: 极速海滨<span class="desc">海岸公路 灯塔棕榈</span><span class="difficulty">★★★★☆</span></button>
     </div>
   </div>
 
@@ -168,180 +168,255 @@ function cr(p0, p1, p2, p3, t) {
 // 也存储 {path} 供NPC跟随
 
 const TRACKS = {
-  1: { // 彩虹大道 - 绚丽城市直道
-    name: '彩虹大道', worldW: 7000, worldH: 3200,
-    roadW: 300, wallH: 14,
+  // ============ 赛道一: 彩虹风车岛 ============
+  // 参考QQ飞车彩虹风车岛 - 多个岛屿通过桥梁连接,风车装饰,彩虹跑道
+  1: {
+    name: '彩虹风车岛', worldW: 7500, worldH: 3800,
+    roadW: 240, wallH: 14,
     outer: [], inner: [], path: [],
-    bg: '#12082e',   // 深紫夜空
+    bg: '#0a1628',
     decorations: [],
+    waterColor: '#0066aa',
     init() {
-      // 直道+弯道组合的城市赛道
+      // 环形赛道连接多个岛屿,中间有湖泊
+      // 起点在右下岛屿
       const ctrl = [
-        // 起跑直道
-        [400,2400],[600,2400],[800,2400],[1000,2400],
-        // 右转弯
-        [1400,2200],[1800,2000],[2200,1800],
-        // 上部长直道
-        [2700,1700],[3300,1650],[3900,1600],[4500,1550],[5100,1500],
-        // 右转下坡
-        [5600,1600],[6000,1800],[6200,2100],
-        // 下部长直道
-        [6300,2400],[6400,2700],[6500,3000],[6500,2900],
-        // 大左转弯
-        [6200,2500],[5800,2400],[5400,2500],[5000,2600],[4600,2700],
-        // 左弯回到起点
-        [4200,2800],[3700,2900],[3200,2900],[2700,2800],[2200,2700],
-        [1700,2600],[1200,2500],[800,2450]
+        // 起点直道 - 右下岛屿
+        [5500,3100],[5700,3050],[5900,3000],
+        // 桥1 - 连向右岛上坡
+        [6100,2850],[6300,2600],[6400,2350],
+        // 右上岛屿 - 风车区
+        [6500,2050],[6550,1800],[6500,1550],
+        // 桥2 - 向上穿过桥梁
+        [6350,1300],[6100,1100],[5800,950],
+        // 上部直道冲刺
+        [5500,850],[5100,800],[4700,780],
+        // 左上急转弯
+        [4300,820],[3900,900],[3500,1000],[3200,1150],
+        // 桥3 - 绕回左下
+        [3000,1400],[2900,1700],[2950,2000],
+        // 左岛屿 - 弯道区
+        [3100,2300],[3400,2550],[3800,2700],
+        // 下部弯道
+        [4200,2800],[4600,2850],[4900,2850],[5200,2850],
+        // 回到起点
+        [5350,2950],[5450,3050]
       ];
-      this.path = this.smoothPath(ctrl, 55);
+      this.path = this.smoothPath(ctrl, 70);
+      this.buildBoundaries();
 
-      this.outer = []; this.inner = [];
-      for (let i = 0; i < this.path.length; i++) {
-        const prev = this.path[(i - 1 + this.path.length) % this.path.length];
-        const next = this.path[(i + 1) % this.path.length];
-        const tx = next.x - prev.x, ty = next.y - prev.y;
-        const len = hypot(tx, ty) || 1;
-        const nx = -ty / len, ny = tx / len;
-        const hw = this.roadW / 2;
-        this.outer.push({ x: this.path[i].x + nx * hw, y: this.path[i].y + ny * hw });
-        this.inner.push({ x: this.path[i].x - nx * hw, y: this.path[i].y - ny * hw });
+      // 风车装饰 - 7个风车在岛屿上
+      this.decorations = [];
+      // 右上岛屿风车
+      const windmills = [
+        {x:6600,y:1700,r:80,color:'#ff4444'},
+        {x:6450,y:1900,r:70,color:'#44ff44'},
+        {x:6700,y:1500,r:90,color:'#4444ff'},
+        {x:6300,y:1650,r:75,color:'#ffff44'},
+        {x:6550,y:2050,r:65,color:'#ff44ff'},
+        // 左岛屿风车
+        {x:2800,y:2000,r:80,color:'#44ffff'},
+        {x:3200,y:2400,r:70,color:'#ff8844'},
+        // 右下起点风车
+        {x:5600,y:3200,r:75,color:'#ff4488'},
+      ];
+      for (const w of windmills) {
+        this.decorations.push({type:'windmill',x:w.x,y:w.y,r:w.r,color:w.color,angle:0});
       }
 
-      // 彩虹装饰 - 多彩建筑
+      // 彩虹栏杆装饰
+      const rainbowColors = ['#ff0000','#ff7f00','#ffff00','#00ff00','#0000ff','#8b00ff'];
+      for (let i = 0; i < 40; i++) {
+        const t = i / 40;
+        const idx = Math.floor(t * this.path.length);
+        const pt = this.path[idx % this.path.length];
+        const next = this.path[(idx + 1) % this.path.length];
+        const angle = Math.atan2(next.y - pt.y, next.x - pt.x) + Math.PI/2;
+        const r = 150 + rnd() * 100;
+        this.decorations.push({
+          type:'rainbow',
+          x: pt.x + Math.cos(angle) * r,
+          y: pt.y + Math.sin(angle) * r,
+          color: rainbowColors[i % rainbowColors.length],
+          lit: rnd() > 0.3
+        });
+      }
+    }
+  },
+
+  // ============ 赛道二: 穿梭之城 ============
+  // 参考QQ飞车穿梭之城 - 城市街道,8字形交叉,霓虹灯光
+  2: {
+    name: '穿梭之城', worldW: 7500, worldH: 3800,
+    roadW: 220, wallH: 12,
+    outer: [], inner: [], path: [],
+    bg: '#080818',
+    decorations: [],
+    init() {
+      // 8字形城市赛道
+      const ctrl = [
+        // 起点 - 下方大道
+        [1500,3200],[1900,3150],[2300,3100],[2700,3050],
+        // 右转进入右环
+        [3100,2900],[3400,2650],[3600,2350],[3650,2000],
+        // 右环上半部
+        [3550,1650],[3300,1400],[2900,1250],[2500,1200],
+        // 8字交叉点上方
+        [2200,1250],[1900,1350],[1700,1550],
+        // 左环上半部
+        [1600,1900],[1700,2250],[1950,2550],[2300,2800],
+        // 左环下半部
+        [2650,3000],[2300,3150],[1900,3250],[1600,3200],
+        // 回到起点
+        [1500,3200]
+      ];
+      this.path = this.smoothPath(ctrl, 80);
+      this.buildBoundaries();
+
+      // 霓虹建筑装饰
       this.decorations = [];
-      const rainbowColors = ['#ff0000','#ff7f00','#ffff00','#00ff00','#0000ff','#8b00ff','#ff1493','#00ffff'];
+      const neonColors = ['#ff00ff','#00ffff','#ff6600','#00ff00','#ff0066','#6600ff'];
+      // 左侧建筑群
+      for (let i = 0; i < 25; i++) {
+        const bx = 800 + rnd() * 600;
+        const by = 1000 + rnd() * 2200;
+        const h = 150 + rnd() * 300;
+        const w = 60 + rnd() * 120;
+        this.decorations.push({
+          type:'neon_building',
+          x: bx, y: by, w, h,
+          color: neonColors[i % neonColors.length],
+          lit: true,
+          neonSide: i % 2 === 0 ? 'top' : 'side'
+        });
+      }
+      // 右侧建筑群
+      for (let i = 0; i < 25; i++) {
+        const bx = 5000 + rnd() * 600;
+        const by = 800 + rnd() * 2200;
+        const h = 150 + rnd() * 300;
+        const w = 60 + rnd() * 120;
+        this.decorations.push({
+          type:'neon_building',
+          x: bx, y: by, w, h,
+          color: neonColors[(i+3) % neonColors.length],
+          lit: true,
+          neonSide: i % 2 === 0 ? 'top' : 'side'
+        });
+      }
+      // 顶部建筑
+      for (let i = 0; i < 15; i++) {
+        const bx = 2000 + rnd() * 3500;
+        const by = 600 + rnd() * 400;
+        const h = 100 + rnd() * 200;
+        const w = 50 + rnd() * 100;
+        this.decorations.push({
+          type:'neon_building',
+          x: bx, y: by, w, h,
+          color: neonColors[(i+1) % neonColors.length],
+          lit: true,
+          neonSide: 'side'
+        });
+      }
+      // 霓虹灯招牌
+      const signs = ['穿梭','都市','之夜','霓虹','CITY','夜城'];
+      for (let i = 0; i < 12; i++) {
+        const idx = Math.floor(i / 12 * this.path.length);
+        const pt = this.path[idx];
+        this.decorations.push({
+          type:'neon_sign',
+          x: pt.x + (rnd()-0.5)*300,
+          y: pt.y + (rnd()-0.5)*300,
+          text: signs[i % signs.length],
+          color: neonColors[i % neonColors.length],
+          angle: rnd() * 0.5 - 0.25
+        });
+      }
+    }
+  },
+
+  // ============ 赛道三: 极速海滨 ============
+  // 参考QQ飞车海岸赛道 - 沿海公路,沙滩,棕榈树,波浪
+  3: {
+    name: '极速海滨', worldW: 7500, worldH: 3800,
+    roadW: 260, wallH: 12,
+    outer: [], inner: [], path: [],
+    bg: '#0a2040',
+    decorations: [],
+    waterColor: '#003366',
+    init() {
+      // 海岸线赛道 - 沿海岸蜿蜒,有沙滩和礁石
+      const ctrl = [
+        // 起点 - 海滨大道
+        [800,3300],[1100,3200],[1400,3050],
+        // 第一个弯 - 沿海弯道
+        [1800,2800],[2200,2500],[2600,2200],
+        // 北部直道
+        [3000,2000],[3500,1900],[4000,1850],[4500,1900],
+        // 东海岸急弯
+        [5000,2050],[5400,2250],[5700,2550],
+        // 东部山崖弯道
+        [6000,2850],[6200,3100],[6300,3350],
+        // 南部直道冲刺
+        [6200,3550],[6000,3650],[5700,3700],[5400,3720],
+        // 西南弯道
+        [5000,3680],[4600,3600],[4200,3500],
+        // 回到起点
+        [3800,3450],[3400,3400],[3000,3400],[2600,3450],[2200,3500],[1800,3550],[1200,3500],[900,3400]
+      ];
+      this.path = this.smoothPath(ctrl, 65);
+      this.buildBoundaries();
+
+      // 棕榈树和沙滩装饰
+      this.decorations = [];
+      const palmColors = ['#228B22','#2E8B57','#32CD32','#006400'];
       for (let i = 0; i < 60; i++) {
         const t = i / 60;
-        const pt = this.path[Math.floor(t * this.path.length) % this.path.length];
-        const angle = rnd() * Math.PI * 2;
-        const r = 250 + rnd() * 600;
-        const col = rainbowColors[i % rainbowColors.length];
+        const idx = Math.floor(t * this.path.length);
+        const pt = this.path[idx];
+        // 沿海岸分布
+        const angle = Math.atan2(pt.y - 3800/2, pt.x - 7500/2) + (rnd()-0.5)*1.5;
+        const r = 280 + rnd() * 500;
         this.decorations.push({
+          type:'palm',
           x: pt.x + Math.cos(angle) * r,
           y: pt.y + Math.sin(angle) * r,
-          w: 50 + rnd() * 100,
-          h: 80 + rnd() * 200,
-          color: col,
-          glow: col,
-          lit: true
+          size: 40 + rnd() * 60,
+          color: palmColors[i % palmColors.length],
+          lean: (rnd()-0.5)*0.5
+        });
+      }
+      // 灯塔
+      this.decorations.push({type:'lighthouse',x:6200,y:3100,r:50,color:'#ffffff',beam:0});
+      this.decorations.push({type:'lighthouse',x:2800,y:2100,r:40,color:'#ffdd44',beam:0});
+      // 沙滩躺椅/阳伞
+      for (let i = 0; i < 20; i++) {
+        const t = i / 20;
+        const idx = Math.floor(t * this.path.length);
+        const pt = this.path[idx];
+        this.decorations.push({
+          type:'beach_umbrella',
+          x: pt.x + (rnd()-0.5)*400,
+          y: pt.y + (rnd()-0.5)*400,
+          color: ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff'][i%4]
         });
       }
     }
-  },
+  }
+};
 
-  2: { // 樱花隧道 - 粉色浪漫赛道
-    name: '樱花隧道', worldW: 7000, worldH: 3200,
-    roadW: 280, wallH: 12,
-    outer: [], inner: [], path: [],
-    bg: '#2a0a1a',
-    decorations: [],
-    init() {
-      // 蜿蜒直道+弯道
-      const ctrl = [
-        // 起点直道
-        [400,2600],[700,2600],[1000,2550],
-        // 右转上山
-        [1400,2400],[1800,2200],[2200,2000],[2600,1750],
-        // 上部弯道
-        [3000,1600],[3400,1450],[3700,1400],
-        // 长下坡直道
-        [4000,1350],[4400,1400],[4800,1500],[5200,1600],
-        // 右转
-        [5600,1800],[5900,2000],[6100,2300],
-        // 下部弯道
-        [6200,2600],[6100,2900],[5800,3100],[5400,3100],
-        // 回到起点
-        [4800,3000],[4200,2900],[3600,2800],[3000,2700],[2400,2700],[1800,2650],[1200,2620],[800,2600]
-      ];
-      this.path = this.smoothPath(ctrl, 55);
-
-      this.outer = []; this.inner = [];
-      for (let i = 0; i < this.path.length; i++) {
-        const prev = this.path[(i - 1 + this.path.length) % this.path.length];
-        const next = this.path[(i + 1) % this.path.length];
-        const tx = next.x - prev.x, ty = next.y - prev.y;
-        const len = hypot(tx, ty) || 1;
-        const nx = -ty / len, ny = tx / len;
-        const hw = this.roadW / 2;
-        this.outer.push({ x: this.path[i].x + nx * hw, y: this.path[i].y + ny * hw });
-        this.inner.push({ x: this.path[i].x - nx * hw, y: this.path[i].y - ny * hw });
-      }
-
-      // 樱花树装饰
-      this.decorations = [];
-      const pinkColors = ['#ffb7c5','#ff69b4','#ff1493','#ffc0cb','#db7093','#ff91a4','#e066ff','#dda0dd'];
-      for (let i = 0; i < 80; i++) {
-        const t = i / 80;
-        const pt = this.path[Math.floor(t * this.path.length) % this.path.length];
-        const angle = rnd() * Math.PI * 2;
-        const r = 220 + rnd() * 700;
-        this.decorations.push({
-          x: pt.x + Math.cos(angle) * r,
-          y: pt.y + Math.sin(angle) * r,
-          size: 20 + rnd() * 40,
-          color: pinkColors[i % pinkColors.length],
-          type: 'tree'
-        });
-      }
-    }
-  },
-
-  3: { // 糖果乐园 - 五彩缤纷赛道
-    name: '糖果乐园', worldW: 7000, worldH: 3200,
-    roadW: 280, wallH: 12,
-    outer: [], inner: [], path: [],
-    bg: '#1a1a0a',
-    decorations: [],
-    init() {
-      // 多直道大弯道
-      const ctrl = [
-        // 起跑直道
-        [400,2800],[700,2800],[1000,2750],[1300,2700],
-        // 右大弯
-        [1700,2400],[2100,2000],[2500,1600],[2900,1200],
-        // 上部长直道
-        [3300,1000],[3800,950],[4300,900],[4800,900],[5300,950],
-        // 右转弯
-        [5800,1200],[6100,1600],[6300,2000],
-        // 下部长直道
-        [6400,2400],[6500,2800],[6500,3000],
-        // 大左转弯
-        [6200,2800],[5800,2700],[5400,2700],[5000,2800],[4600,2900],
-        // 下部弯道
-        [4000,3000],[3400,3000],[2800,2950],[2200,2900],[1600,2850],
-        [1000,2800]
-      ];
-      this.path = this.smoothPath(ctrl, 55);
-
-      this.outer = []; this.inner = [];
-      for (let i = 0; i < this.path.length; i++) {
-        const prev = this.path[(i - 1 + this.path.length) % this.path.length];
-        const next = this.path[(i + 1) % this.path.length];
-        const tx = next.x - prev.x, ty = next.y - prev.y;
-        const len = hypot(tx, ty) || 1;
-        const nx = -ty / len, ny = tx / len;
-        const hw = this.roadW / 2;
-        this.outer.push({ x: this.path[i].x + nx * hw, y: this.path[i].y + ny * hw });
-        this.inner.push({ x: this.path[i].x - nx * hw, y: this.path[i].y - ny * hw });
-      }
-
-      // 糖果装饰
-      this.decorations = [];
-      const candyColors = ['#ff4444','#44ff44','#4444ff','#ffff00','#ff44ff','#44ffff','#ff8800','#88ff00','#ff0088','#00ff88'];
-      for (let i = 0; i < 80; i++) {
-        const t = i / 80;
-        const pt = this.path[Math.floor(t * this.path.length) % this.path.length];
-        const angle = rnd() * Math.PI * 2;
-        const r = 230 + rnd() * 650;
-        this.decorations.push({
-          x: pt.x + Math.cos(angle) * r,
-          y: pt.y + Math.sin(angle) * r,
-          size: 25 + rnd() * 35,
-          color: candyColors[i % candyColors.length],
-          type: 'candy'
-        });
-      }
-    }
+// 通用边界构建
+TRACKS[1].buildBoundaries = TRACKS[2].buildBoundaries = TRACKS[3].buildBoundaries = function() {
+  this.outer = []; this.inner = [];
+  for (let i = 0; i < this.path.length; i++) {
+    const prev = this.path[(i - 1 + this.path.length) % this.path.length];
+    const next = this.path[(i + 1) % this.path.length];
+    const tx = next.x - prev.x, ty = next.y - prev.y;
+    const len = hypot(tx, ty) || 1;
+    const nx = -ty / len, ny = tx / len;
+    const hw = this.roadW / 2;
+    this.outer.push({ x: this.path[i].x + nx * hw, y: this.path[i].y + ny * hw });
+    this.inner.push({ x: this.path[i].x - nx * hw, y: this.path[i].y - ny * hw });
   }
 };
 
@@ -1002,25 +1077,30 @@ function drawTrack(ox, oy) {
   // 渐变背景
   const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
   if (currentTrack === 1) {
-    bgGrad.addColorStop(0, '#2a1060');
-    bgGrad.addColorStop(0.5, '#1a0a3e');
-    bgGrad.addColorStop(1, '#0a0520');
+    // 彩虹风车岛 - 蓝天海洋
+    bgGrad.addColorStop(0, '#1a4a7a');
+    bgGrad.addColorStop(0.4, '#2a6a9a');
+    bgGrad.addColorStop(0.7, '#1a5a8a');
+    bgGrad.addColorStop(1, '#0a3a5a');
   } else if (currentTrack === 2) {
-    bgGrad.addColorStop(0, '#4a1060');
-    bgGrad.addColorStop(0.5, '#3a0a40');
-    bgGrad.addColorStop(1, '#2a0820');
+    // 穿梭之城 - 霓虹夜景
+    bgGrad.addColorStop(0, '#0a0a20');
+    bgGrad.addColorStop(0.5, '#151535');
+    bgGrad.addColorStop(1, '#0a0a15');
   } else {
-    bgGrad.addColorStop(0, '#3a1a0a');
-    bgGrad.addColorStop(0.5, '#2a1008');
-    bgGrad.addColorStop(1, '#1a0a05');
+    // 极速海滨 - 海岸夕阳
+    bgGrad.addColorStop(0, '#1a3050');
+    bgGrad.addColorStop(0.3, '#2a4060');
+    bgGrad.addColorStop(0.6, '#1a3555');
+    bgGrad.addColorStop(1, '#0a2040');
   }
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
   // 星空/光点装饰
-  const starColors = currentTrack === 1 ? ['#ff44ff','#44ffff','#ffff44','#ffffff'] :
-                    currentTrack === 2 ? ['#ffb7c5','#ff69b4','#ffffff','#ffc0cb'] :
-                    ['#ff4444','#44ff44','#ffff00','#ff44ff'];
+  const starColors = currentTrack === 1 ? ['#ffffff','#aaddff','#88ccff','#ffffff'] :
+                    currentTrack === 2 ? ['#ff44ff','#44ffff','#ffff44','#ff88ff','#88ffff'] :
+                    ['#ffffff','#aaccff','#ffd700','#ffffff'];
   for (let i = 0; i < 40; i++) {
     const sx = ((i * 173 + 50) % t.worldW) - ox;
     const sy = ((i * 251 + 30) % t.worldH) - oy;
@@ -1134,13 +1214,194 @@ function drawTrack(ox, oy) {
   ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('START', s0.x, s0.y - t.roadW / 2 - 18);
 
-  // 装饰绘制 - 所有赛道都用 decorations 数组
+  // 绘制水面背景 (赛道1和3)
+  if (t.waterColor) {
+    ctx.fillStyle = t.waterColor;
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(0, 0, t.worldW, t.worldH);
+    ctx.globalAlpha = 1;
+    // 水波纹效果
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 15; i++) {
+      const wx = (i * 537 + Date.now() * 0.01) % t.worldW;
+      const wy = (i * 371 + Date.now() * 0.008) % t.worldH;
+      ctx.beginPath();
+      ctx.arc(wx, wy, 30 + (Date.now() * 0.01 + i) % 50, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // 装饰绘制
   for (const d of t.decorations) {
-    if (d.type === 'tree') {
+    if (d.type === 'windmill') {
+      // 风车
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      d.angle = (d.angle + 0.02) % (Math.PI * 2);
+      // 塔身
+      ctx.fillStyle = '#f5f5dc';
+      ctx.fillRect(-8, -d.r * 1.5, 16, d.r * 1.5);
+      // 风车叶片
+      ctx.fillStyle = d.color;
+      ctx.shadowColor = d.color;
+      ctx.shadowBlur = 15;
+      for (let i = 0; i < 4; i++) {
+        ctx.save();
+        ctx.rotate(d.angle + i * Math.PI / 2);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-8, -d.r * 0.9);
+        ctx.lineTo(0, -d.r);
+        ctx.lineTo(8, -d.r * 0.9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      // 中心圆
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(0, 0, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    } else if (d.type === 'neon_building') {
+      // 霓虹建筑
+      ctx.fillStyle = d.color + '44';
+      ctx.fillRect(d.x - d.w / 2, d.y - d.h, d.w, d.h);
+      // 霓虹边框
+      ctx.strokeStyle = d.color;
+      ctx.shadowColor = d.color;
+      ctx.shadowBlur = d.lit ? 15 : 5;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(d.x - d.w / 2, d.y - d.h, d.w, d.h);
+      // 窗户
+      if (d.lit) {
+        ctx.fillStyle = d.color + 'aa';
+        for (let wy = d.y - d.h + 15; wy < d.y - 10; wy += 20) {
+          for (let wx = d.x - d.w / 2 + 8; wx < d.x + d.w / 2 - 12; wx += 18) {
+            ctx.fillRect(wx, wy, 10, 12);
+          }
+        }
+      }
+      ctx.shadowBlur = 0;
+    } else if (d.type === 'neon_sign') {
+      // 霓虹招牌
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.rotate(d.angle || 0);
+      ctx.fillStyle = d.color;
+      ctx.shadowColor = d.color;
+      ctx.shadowBlur = 20;
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(d.text, 0, 0);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    } else if (d.type === 'lighthouse') {
+      // 灯塔
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      // 塔身
+      const lg = ctx.createLinearGradient(-d.r/3, 0, d.r/3, 0);
+      lg.addColorStop(0, '#888');
+      lg.addColorStop(0.5, '#fff');
+      lg.addColorStop(1, '#888');
+      ctx.fillStyle = lg;
+      ctx.beginPath();
+      ctx.moveTo(-d.r/3, 0);
+      ctx.lineTo(-d.r/6, -d.r * 1.5);
+      ctx.lineTo(d.r/6, -d.r * 1.5);
+      ctx.lineTo(d.r/3, 0);
+      ctx.closePath();
+      ctx.fill();
+      // 顶部灯
+      d.beam = (d.beam + 0.03) % (Math.PI * 2);
+      ctx.fillStyle = d.color;
+      ctx.shadowColor = d.color;
+      ctx.shadowBlur = 25;
+      ctx.beginPath();
+      ctx.arc(0, -d.r * 1.5, 8, 0, Math.PI * 2);
+      ctx.fill();
+      // 光束
+      ctx.globalAlpha = 0.15 + Math.sin(d.beam) * 0.1;
+      ctx.fillStyle = d.color;
+      ctx.beginPath();
+      ctx.moveTo(0, -d.r * 1.5);
+      ctx.lineTo(Math.cos(d.beam) * 200, -d.r * 1.5 - 100);
+      ctx.lineTo(Math.cos(d.beam + 0.3) * 200, -d.r * 1.5 - 100);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    } else if (d.type === 'palm') {
+      // 棕榈树
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.rotate(d.lean || 0);
       // 树干
+      ctx.fillStyle = '#8B4513';
+      ctx.beginPath();
+      ctx.moveTo(-6, 0);
+      ctx.lineTo(-4, -d.size * 0.6);
+      ctx.lineTo(4, -d.size * 0.6);
+      ctx.lineTo(6, 0);
+      ctx.closePath();
+      ctx.fill();
+      // 树叶
+      ctx.fillStyle = d.color;
+      ctx.shadowColor = d.color;
+      ctx.shadowBlur = 8;
+      for (let i = 0; i < 7; i++) {
+        ctx.save();
+        ctx.translate(0, -d.size * 0.6);
+        ctx.rotate((i - 3) * 0.5 + Math.sin(Date.now() * 0.001 + i) * 0.05);
+        ctx.beginPath();
+        ctx.ellipse(0, -d.size * 0.3, 6, d.size * 0.35, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    } else if (d.type === 'beach_umbrella') {
+      // 沙滩阳伞
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      // 伞面
+      ctx.fillStyle = d.color;
+      ctx.shadowColor = d.color;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(0, -25, 18, Math.PI, 0);
+      ctx.closePath();
+      ctx.fill();
+      // 条纹
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, -25, 18, Math.PI + 0.3, Math.PI + 1.2);
+      ctx.stroke();
+      // 伞柄
+      ctx.fillStyle = '#ddd';
+      ctx.fillRect(-2, -25, 4, 30);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    } else if (d.type === 'rainbow') {
+      // 彩虹栏杆
+      if (d.lit) {
+        ctx.fillStyle = d.color;
+        ctx.shadowColor = d.color;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    } else if (d.type === 'tree') {
+      // 樱花树
       ctx.fillStyle = '#8b6914';
       ctx.fillRect(d.x - 5, d.y - d.size * 0.3, 10, d.size * 0.4);
-      // 树冠 - 多层樱花
       ctx.fillStyle = d.color;
       ctx.shadowColor = d.color;
       ctx.shadowBlur = 15;
@@ -1153,14 +1414,13 @@ function drawTrack(ox, oy) {
       ctx.fill();
       ctx.shadowBlur = 0;
     } else if (d.type === 'candy') {
-      // 糖果装饰
+      // 糖果
       ctx.fillStyle = d.color;
       ctx.shadowColor = d.color;
       ctx.shadowBlur = 18;
       ctx.beginPath();
       ctx.arc(d.x, d.y, d.size * 0.4, 0, Math.PI * 2);
       ctx.fill();
-      // 糖果条纹
       ctx.strokeStyle = 'rgba(255,255,255,0.4)';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -1168,13 +1428,12 @@ function drawTrack(ox, oy) {
       ctx.stroke();
       ctx.shadowBlur = 0;
     } else {
-      // 默认建筑 - 发光建筑
+      // 默认发光建筑
       ctx.fillStyle = d.color;
       ctx.fillRect(d.x - d.w / 2, d.y - d.h, d.w, d.h);
-      // 发光窗户
       if (d.lit) {
-        ctx.fillStyle = 'rgba(255,255,180,0.9)';
-        ctx.shadowColor = d.glow;
+        ctx.fillStyle = d.glow || '#ffffaa';
+        ctx.shadowColor = d.glow || '#ffffaa';
         ctx.shadowBlur = 8;
         for (let wy = d.y - d.h + 12; wy < d.y - 8; wy += 16) {
           for (let wx = d.x - d.w / 2 + 6; wx < d.x + d.w / 2 - 8; wx += 14) {
@@ -1183,7 +1442,6 @@ function drawTrack(ox, oy) {
         }
         ctx.shadowBlur = 0;
       }
-      // 楼顶灯
       ctx.fillStyle = '#ff0000';
       ctx.shadowColor = '#ff0000';
       ctx.shadowBlur = 10;
