@@ -59,19 +59,19 @@
     .nitro-bar { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); width: clamp(160px, 40vw, 260px); height: 20px; background: rgba(0,0,0,0.8); border-radius: 10px; border: 2px solid #e67e22; overflow: hidden; display: none; z-index: 40; }
     .nitro-fill { height: 100%; background: linear-gradient(90deg, #e67e22, #f39c12, #ff4444); transition: width 0.05s; box-shadow: 0 0 12px #e67e22; }
 
-    /* 虚拟摇杆 */
-    #joystickZone { position: fixed; bottom: 70px; left: 20px; width: clamp(110px, 28vw, 150px); height: clamp(110px, 28vw, 150px); display: none; z-index: 50; }
-    #joystickBase { width: 100%; height: 100%; background: rgba(255,255,255,0.1); border: 3px solid rgba(0,255,170,0.4); border-radius: 50%; position: relative; }
-    #joystickThumb { width: 45%; height: 45%; background: rgba(0,255,170,0.8); border: 3px solid #00ffaa; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 20px rgba(0,255,170,0.6); }
+    /* 左侧方向按钮 */
+    #leftControls { position: fixed; bottom: 55px; left: 10px; display: none; gap: 6px; z-index: 50; }
+    .dir-btn { width: clamp(55px, 14vw, 72px); height: clamp(55px, 14vw, 72px); border-radius: 50%; background: rgba(52,152,219,0.75); border: 3px solid #3498db; display: flex; align-items: center; justify-content: center; font-size: clamp(18px, 4vw, 24px); color: white; cursor: pointer; box-shadow: 0 0 12px rgba(52,152,219,0.5); transition: transform 0.08s; touch-action: manipulation; user-select: none; }
+    .dir-btn:active { transform: scale(0.82); }
+    .dir-btn.active { background: rgba(41,128,185,0.9); box-shadow: 0 0 20px rgba(52,152,219,0.8); }
 
     /* 右侧按钮 */
     #rightControls { position: fixed; bottom: 55px; right: 10px; display: none; flex-direction: column; gap: 8px; z-index: 50; }
-    .action-btn { width: clamp(60px, 15vw, 78px); height: clamp(60px, 15vw, 78px); border-radius: 50%; border: 3px solid; display: flex; align-items: center; justify-content: center; font-size: clamp(11px, 2.8vw, 14px); font-weight: bold; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.08s; }
+    .action-btn { width: clamp(55px, 14vw, 72px); height: clamp(55px, 14vw, 72px); border-radius: 50%; border: 3px solid; display: flex; align-items: center; justify-content: center; font-size: clamp(11px, 2.8vw, 14px); font-weight: bold; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.08s; touch-action: manipulation; user-select: none; }
     .action-btn:active { transform: scale(0.82) !important; }
-    .action-btn.gas { background: rgba(46,204,113,0.75); border-color: #2ecc71; box-shadow: 0 0 15px rgba(46,204,113,0.5); }
-    .action-btn.drift { background: rgba(241,196,15,0.75); border-color: #f1c40f; box-shadow: 0 0 15px rgba(241,196,15,0.5); }
-    .action-btn.nitro { background: rgba(230,126,34,0.75); border-color: #e67e22; box-shadow: 0 0 15px rgba(230,126,34,0.5); }
-    .action-btn.reset { background: rgba(200,60,60,0.75); border-color: #e74c3c; box-shadow: 0 0 15px rgba(231,76,60,0.5); }
+    .action-btn.nitro { background: rgba(230,126,34,0.8); border-color: #e67e22; box-shadow: 0 0 15px rgba(230,126,34,0.5); }
+    .action-btn.drift { background: rgba(241,196,15,0.8); border-color: #f1c40f; box-shadow: 0 0 15px rgba(241,196,15,0.5); }
+    .action-btn.reset { background: rgba(200,60,60,0.8); border-color: #e74c3c; box-shadow: 0 0 15px rgba(231,76,60,0.5); }
 
     .minimap { position: fixed; bottom: 12px; right: 12px; width: clamp(75px, 18vw, 110px); height: clamp(55px, 14vw, 82px); background: rgba(0,0,0,0.8); border: 2px solid #00ffaa; border-radius: 6px; display: none; z-index: 40; overflow: hidden; }
     #minimapCanvas { width: 100%; height: 100%; }
@@ -97,9 +97,9 @@
       <div class="avatar-item"><div class="avatar-circle"><canvas id="npc5" width="80" height="80"></canvas></div><div class="label">万总</div></div>
     </div>
     <div class="track-list">
-      <button class="track-btn" onclick="startGame(1)">🏙️ 赛道一: 霓虹城<span class="desc">城市夜景 弯道平缓</span><span class="difficulty">★★★☆☆</span></button>
-      <button class="track-btn" onclick="startGame(2)">🌲 赛道二: 枫林谷<span class="desc">秋日林道 多弯挑战</span><span class="difficulty">★★★★☆</span></button>
-      <button class="track-btn" onclick="startGame(3)">🏭 赛道三: 极速工厂<span class="desc">工业赛道 极速狂飙</span><span class="difficulty">★★★★★</span></button>
+      <button class="track-btn" onclick="startGame(1)">🌈 赛道一: 彩虹大道<span class="desc">绚丽直道 弯道冲刺</span><span class="difficulty">★★★☆☆</span></button>
+      <button class="track-btn" onclick="startGame(2)">🌸 赛道二: 樱花隧道<span class="desc">粉色花海 浪漫赛道</span><span class="difficulty">★★★★☆</span></button>
+      <button class="track-btn" onclick="startGame(3)">🎪 赛道三: 糖果乐园<span class="desc">五彩赛道 极速狂飙</span><span class="difficulty">★★★★★</span></button>
     </div>
   </div>
 
@@ -120,11 +120,14 @@
   <div class="nitro-bar"><div class="nitro-fill" id="nitroFill"></div></div>
   <div id="startHint">←→转向 空格漂移 Shift喷气 R复位</div>
 
-  <div id="joystickZone"><div id="joystickBase"><div id="joystickThumb"></div></div></div>
+  <div id="leftControls">
+    <button class="dir-btn" id="btnLeft">◀</button>
+    <button class="dir-btn" id="btnRight">▶</button>
+  </div>
   <div id="rightControls">
     <button class="action-btn nitro" id="btnNitro">🔥喷</button>
     <button class="action-btn drift" id="btnDrift">💨漂</button>
-    <button class="action-btn reset" id="btnReset">↩复位</button>
+    <button class="action-btn reset" id="btnReset">↩</button>
   </div>
   <div class="minimap"><canvas id="minimapCanvas" width="120" height="90"></canvas></div>
 
@@ -165,83 +168,32 @@ function cr(p0, p1, p2, p3, t) {
 // 也存储 {path} 供NPC跟随
 
 const TRACKS = {
-  1: { // 霓虹城 - 参考QQ飞车城市赛道
-    name: '霓虹城', worldW: 8000, worldH: 3500,
+  1: { // 彩虹大道 - 绚丽城市直道
+    name: '彩虹大道', worldW: 7000, worldH: 3200,
     roadW: 300, wallH: 14,
     outer: [], inner: [], path: [],
-    bg: '#06060f',
-    // 建筑装饰
-    buildings: [],
+    bg: '#12082e',   // 深紫夜空
+    decorations: [],
     init() {
-      const cx = 4000, cy = 1750;
-      // 椭圆赛道，有长直道
-      const pts = [];
-      for (let i = 0; i <= 360; i += 3) {
-        pts.push({ x: cx + Math.cos(i * Math.PI / 180) * 2600, y: cy + Math.sin(i * Math.PI / 180) * 1300 });
-      }
-      this.path = pts;
-
-      // 计算内外边界
-      this.outer = []; this.inner = [];
-      for (let i = 0; i < pts.length; i++) {
-        const prev = pts[(i - 1 + pts.length) % pts.length];
-        const next = pts[(i + 1) % pts.length];
-        const tx = next.x - prev.x, ty = next.y - prev.y;
-        const len = hypot(tx, ty) || 1;
-        const nx = -ty / len, ny = tx / len;
-        const hw = this.roadW / 2;
-        this.outer.push({ x: pts[i].x + nx * hw, y: pts[i].y + ny * hw });
-        this.inner.push({ x: pts[i].x - nx * hw, y: pts[i].y - ny * hw });
-      }
-
-      // 建筑物
-      this.buildings = [];
-      const bldColors = ['#1a1a3e', '#1e1e3a', '#151535', '#202040'];
-      for (let i = 0; i < 50; i++) {
-        const angle = (i / 50) * Math.PI * 2;
-        const r = 700 + rnd() * 400;
-        this.buildings.push({
-          x: cx + Math.cos(angle) * r,
-          y: cy + Math.sin(angle) * r,
-          w: 80 + rnd() * 120,
-          h: 100 + rnd() * 250,
-          color: bldColors[i % bldColors.length],
-          lit: rnd() > 0.35
-        });
-      }
-    }
-  },
-
-  2: { // 枫林谷 - 参考QQ飞车森林赛道
-    name: '枫林谷', worldW: 8000, worldH: 3500,
-    roadW: 280, wallH: 12,
-    outer: [], inner: [], path: [],
-    bg: '#0a1508',
-    trees: [],
-    init() {
-      // 有长直道的S形赛道
+      // 直道+弯道组合的城市赛道
       const ctrl = [
-        // 起点直道
-        [500,2200],[600,2200],[700,2200],[900,2150],
-        // 右转上坡直道
-        [1300,2000],[1900,1800],[2500,1600],[3100,1450],
-        // 左弯
-        [3700,1400],[4100,1600],[4300,1900],
-        // 下坡直道
-        [4500,2200],[4900,2400],[5300,2600],
-        // 左转
-        [5700,2800],[6000,2500],[6200,2100],
-        // 上坡长直道
-        [6400,1700],[6600,1300],[6800,900],[7000,700],
-        // 右弯绕回
-        [7200,600],[7300,800],[7200,1100],[7000,1400],
-        // 长下坡直道
-        [6700,1700],[6400,2000],[6000,2300],[5500,2600],[5000,2800],
-        // 回到起点
-        [4400,2700],[3800,2500],[3200,2300],[2600,2200],[2000,2250],
-        [1400,2300],[800,2200]
+        // 起跑直道
+        [400,2400],[600,2400],[800,2400],[1000,2400],
+        // 右转弯
+        [1400,2200],[1800,2000],[2200,1800],
+        // 上部长直道
+        [2700,1700],[3300,1650],[3900,1600],[4500,1550],[5100,1500],
+        // 右转下坡
+        [5600,1600],[6000,1800],[6200,2100],
+        // 下部长直道
+        [6300,2400],[6400,2700],[6500,3000],[6500,2900],
+        // 大左转弯
+        [6200,2500],[5800,2400],[5400,2500],[5000,2600],[4600,2700],
+        // 左弯回到起点
+        [4200,2800],[3700,2900],[3200,2900],[2700,2800],[2200,2700],
+        [1700,2600],[1200,2500],[800,2450]
       ];
-      this.path = this.smoothPath(ctrl, 50);
+      this.path = this.smoothPath(ctrl, 55);
 
       this.outer = []; this.inner = [];
       for (let i = 0; i < this.path.length; i++) {
@@ -255,51 +207,111 @@ const TRACKS = {
         this.inner.push({ x: this.path[i].x - nx * hw, y: this.path[i].y - ny * hw });
       }
 
-      // 树
-      this.trees = [];
-      for (let i = 0; i < 90; i++) {
-        const t = i / 90;
+      // 彩虹装饰 - 多彩建筑
+      this.decorations = [];
+      const rainbowColors = ['#ff0000','#ff7f00','#ffff00','#00ff00','#0000ff','#8b00ff','#ff1493','#00ffff'];
+      for (let i = 0; i < 60; i++) {
+        const t = i / 60;
+        const pt = this.path[Math.floor(t * this.path.length) % this.path.length];
+        const angle = rnd() * Math.PI * 2;
+        const r = 250 + rnd() * 600;
+        const col = rainbowColors[i % rainbowColors.length];
+        this.decorations.push({
+          x: pt.x + Math.cos(angle) * r,
+          y: pt.y + Math.sin(angle) * r,
+          w: 50 + rnd() * 100,
+          h: 80 + rnd() * 200,
+          color: col,
+          glow: col,
+          lit: true
+        });
+      }
+    }
+  },
+
+  2: { // 樱花隧道 - 粉色浪漫赛道
+    name: '樱花隧道', worldW: 7000, worldH: 3200,
+    roadW: 280, wallH: 12,
+    outer: [], inner: [], path: [],
+    bg: '#2a0a1a',
+    decorations: [],
+    init() {
+      // 蜿蜒直道+弯道
+      const ctrl = [
+        // 起点直道
+        [400,2600],[700,2600],[1000,2550],
+        // 右转上山
+        [1400,2400],[1800,2200],[2200,2000],[2600,1750],
+        // 上部弯道
+        [3000,1600],[3400,1450],[3700,1400],
+        // 长下坡直道
+        [4000,1350],[4400,1400],[4800,1500],[5200,1600],
+        // 右转
+        [5600,1800],[5900,2000],[6100,2300],
+        // 下部弯道
+        [6200,2600],[6100,2900],[5800,3100],[5400,3100],
+        // 回到起点
+        [4800,3000],[4200,2900],[3600,2800],[3000,2700],[2400,2700],[1800,2650],[1200,2620],[800,2600]
+      ];
+      this.path = this.smoothPath(ctrl, 55);
+
+      this.outer = []; this.inner = [];
+      for (let i = 0; i < this.path.length; i++) {
+        const prev = this.path[(i - 1 + this.path.length) % this.path.length];
+        const next = this.path[(i + 1) % this.path.length];
+        const tx = next.x - prev.x, ty = next.y - prev.y;
+        const len = hypot(tx, ty) || 1;
+        const nx = -ty / len, ny = tx / len;
+        const hw = this.roadW / 2;
+        this.outer.push({ x: this.path[i].x + nx * hw, y: this.path[i].y + ny * hw });
+        this.inner.push({ x: this.path[i].x - nx * hw, y: this.path[i].y - ny * hw });
+      }
+
+      // 樱花树装饰
+      this.decorations = [];
+      const pinkColors = ['#ffb7c5','#ff69b4','#ff1493','#ffc0cb','#db7093','#ff91a4','#e066ff','#dda0dd'];
+      for (let i = 0; i < 80; i++) {
+        const t = i / 80;
         const pt = this.path[Math.floor(t * this.path.length) % this.path.length];
         const angle = rnd() * Math.PI * 2;
         const r = 220 + rnd() * 700;
-        this.trees.push({
+        this.decorations.push({
           x: pt.x + Math.cos(angle) * r,
           y: pt.y + Math.sin(angle) * r,
-          size: 18 + rnd() * 35,
-          color: `hsl(${15 + rnd()*30}, ${55+rnd()*35}%, ${18+rnd()*22}%)`
+          size: 20 + rnd() * 40,
+          color: pinkColors[i % pinkColors.length],
+          type: 'tree'
         });
       }
     }
   },
 
-  3: { // 极速工厂 - 参考QQ飞车工厂赛道
-    name: '极速工厂', worldW: 8000, worldH: 3500,
-    roadW: 260, wallH: 12,
+  3: { // 糖果乐园 - 五彩缤纷赛道
+    name: '糖果乐园', worldW: 7000, worldH: 3200,
+    roadW: 280, wallH: 12,
     outer: [], inner: [], path: [],
-    bg: '#120a04',
-    pipes: [], chimneys: [],
+    bg: '#1a1a0a',
+    decorations: [],
     init() {
-      // 多直道 + 大弯道
+      // 多直道大弯道
       const ctrl = [
-        // 起点直道
-        [500,2600],[700,2600],[900,2600],[1100,2600],
-        // 大右弯
-        [1400,2400],[1700,2100],[2000,1800],[2300,1500],[2600,1200],
+        // 起跑直道
+        [400,2800],[700,2800],[1000,2750],[1300,2700],
+        // 右大弯
+        [1700,2400],[2100,2000],[2500,1600],[2900,1200],
         // 上部长直道
-        [2900,1000],[3300,900],[3700,850],[4100,850],[4500,900],
-        // 右转下坡
-        [4900,1100],[5200,1400],[5400,1700],[5500,2000],
+        [3300,1000],[3800,950],[4300,900],[4800,900],[5300,950],
+        // 右转弯
+        [5800,1200],[6100,1600],[6300,2000],
         // 下部长直道
-        [5600,2300],[5800,2600],[6000,2900],[6200,3100],[6500,3200],
-        // 大左弯
-        [6800,3100],[7000,2800],[7100,2500],[7100,2200],[7000,1900],
-        // 左上长直道
-        [6800,1600],[6500,1300],[6100,1100],[5700,950],[5300,900],
-        // 左弯回到起点
-        [4900,950],[4500,1100],[4200,1300],[3900,1500],[3600,1700],
-        [3200,1900],[2800,2100],[2500,2300],[2200,2500],[1800,2600],[1200,2650]
+        [6400,2400],[6500,2800],[6500,3000],
+        // 大左转弯
+        [6200,2800],[5800,2700],[5400,2700],[5000,2800],[4600,2900],
+        // 下部弯道
+        [4000,3000],[3400,3000],[2800,2950],[2200,2900],[1600,2850],
+        [1000,2800]
       ];
-      this.path = this.smoothPath(ctrl, 45);
+      this.path = this.smoothPath(ctrl, 55);
 
       this.outer = []; this.inner = [];
       for (let i = 0; i < this.path.length; i++) {
@@ -313,23 +325,20 @@ const TRACKS = {
         this.inner.push({ x: this.path[i].x - nx * hw, y: this.path[i].y - ny * hw });
       }
 
-      // 工厂管道
-      this.pipes = [];
-      for (let i = 0; i < 35; i++) {
-        this.pipes.push({
-          x: 400 + rnd() * 6800,
-          y: 200 + rnd() * 3100,
-          w: 25 + rnd() * 45,
-          h: 120 + rnd() * 350,
-          color: `hsl(${15+rnd()*20}, ${25+rnd()*25}%, ${18+rnd()*18}%)`
-        });
-      }
-      this.chimneys = [];
-      for (let i = 0; i < 12; i++) {
-        this.chimneys.push({
-          x: 600 + i * 580 + rnd() * 150,
-          y: 250 + rnd() * 600,
-          r: 18 + rnd() * 22
+      // 糖果装饰
+      this.decorations = [];
+      const candyColors = ['#ff4444','#44ff44','#4444ff','#ffff00','#ff44ff','#44ffff','#ff8800','#88ff00','#ff0088','#00ff88'];
+      for (let i = 0; i < 80; i++) {
+        const t = i / 80;
+        const pt = this.path[Math.floor(t * this.path.length) % this.path.length];
+        const angle = rnd() * Math.PI * 2;
+        const r = 230 + rnd() * 650;
+        this.decorations.push({
+          x: pt.x + Math.cos(angle) * r,
+          y: pt.y + Math.sin(angle) * r,
+          size: 25 + rnd() * 35,
+          color: candyColors[i % candyColors.length],
+          type: 'candy'
         });
       }
     }
@@ -458,6 +467,7 @@ class Car {
     // 车身动画
     this.wheelRot = 0;
     this.engineVibe = 0;
+    this.driftTexts = [];
   }
 
   setPath(pts) { this.pathPts = pts; this.pathIdx = 0; }
@@ -661,13 +671,17 @@ class Car {
   }
 
   reset() {
-    // 只回正车身方向，不改变位置
+    // 回正车身方向，不改变位置
     this.angle = -Math.PI / 2;
     this.driftAngle = 0;
     this.driftTime = 0;
     this.isDrifting = false;
     this.speed = this.minSpeed;
+    // 显示复位提示
+    this.driftTexts = this.driftTexts || [];
+    this.driftTexts.push({ text: '↩ 已复位!', color: '#44aaff', life: 40 });
   }
+
 
   draw(ctx, ox, oy, avatarImg) {
     if (!this.alive) return;
@@ -883,43 +897,21 @@ document.addEventListener('keyup', e => {
 
 // 移动端
 if (isMobile) {
-  document.getElementById('joystickZone').style.display = 'block';
+  document.getElementById('leftControls').style.display = 'flex';
   document.getElementById('rightControls').style.display = 'flex';
   document.querySelector('.minimap').style.display = 'block';
 
-  const jBase = document.getElementById('joystickBase');
-  const jThumb = document.getElementById('joystickThumb');
-  let jCX, jCY, jActive = false;
+  // 左方向按钮
+  const btnL = document.getElementById('btnLeft');
+  const btnR = document.getElementById('btnRight');
+  btnL.addEventListener('touchstart', e => { e.preventDefault(); keys.left = true; btnL.classList.add('active'); }, { passive: false });
+  btnL.addEventListener('touchend', e => { e.preventDefault(); keys.left = false; btnL.classList.remove('active'); }, { passive: false });
+  btnL.addEventListener('touchcancel', e => { e.preventDefault(); keys.left = false; btnL.classList.remove('active'); }, { passive: false });
+  btnR.addEventListener('touchstart', e => { e.preventDefault(); keys.right = true; btnR.classList.add('active'); }, { passive: false });
+  btnR.addEventListener('touchend', e => { e.preventDefault(); keys.right = false; btnR.classList.remove('active'); }, { passive: false });
+  btnR.addEventListener('touchcancel', e => { e.preventDefault(); keys.right = false; btnR.classList.remove('active'); }, { passive: false });
 
-  function getJCenter() {
-    const r = jBase.getBoundingClientRect();
-    jCX = r.left + r.width / 2; jCY = r.top + r.height / 2;
-  }
-
-  function handleJT(e) {
-    if (!jActive) return;
-    e.preventDefault();
-    const t = e.touches ? e.touches[0] : e;
-    const dx = t.clientX - jCX, dy = t.clientY - jCY;
-    const maxR = jBase.offsetWidth / 2 - 5;
-    const dist = Math.min(maxR, hypot(dx, dy));
-    const ang = Math.atan2(dy, dx);
-    jThumb.style.left = (jBase.offsetWidth / 2 + Math.cos(ang) * dist) + 'px';
-    jThumb.style.top = (jBase.offsetHeight / 2 + Math.sin(ang) * dist) + 'px';
-    keys.left = dx < -maxR * 0.35;
-    keys.right = dx > maxR * 0.35;
-  }
-
-  jBase.addEventListener('touchstart', e => { e.preventDefault(); jActive = true; getJCenter(); }, { passive: false });
-  document.addEventListener('touchmove', handleJT, { passive: false });
-  document.addEventListener('touchend', e => {
-    if (!jActive) return; jActive = false;
-    jThumb.style.left = '50%'; jThumb.style.top = '50%';
-    jThumb.style.transform = 'translate(-50%,-50%)';
-    keys.left = keys.right = false;
-  });
-  document.addEventListener('touchcancel', () => { jActive = false; keys.left = keys.right = false; });
-
+  // 右侧按钮
   [
     ['btnNitro', 'nitro'], ['btnDrift', 'drift']
   ].forEach(([id, key]) => {
@@ -929,8 +921,9 @@ if (isMobile) {
     btn.addEventListener('touchcancel', e => { e.preventDefault(); keys[key] = false; }, { passive: false });
   });
 
+  // 复位按钮
   const btnReset = document.getElementById('btnReset');
-  btnReset.addEventListener('touchstart', e => { e.preventDefault(); player?.reset(); }, { passive: false });
+  btnReset.addEventListener('touchstart', e => { e.preventDefault(); if (player) player.reset(); }, { passive: false });
 }
 
 // PC复位按钮
@@ -947,8 +940,14 @@ function startGame(trackId) {
   trackData.init();
   trackPts = trackData.path;
 
+  // 计算起点朝向
   const start = trackPts[0];
+  const next = trackPts[1];
+  const startAngle = Math.atan2(next.x - start.x, -(next.y - start.y));
+
   player = new Car(start.x, start.y, { name: '翠翠', color: '#00cc77', accent: '#009955', neon: '#00ffaa' }, true);
+  player.angle = startAngle;
+  player.speed = player.minSpeed;
 
   npcs = [];
   for (let i = 0; i < 4; i++) {
@@ -956,6 +955,9 @@ function startGame(trackId) {
     const npc = new Car(trackPts[idx].x + (rnd() - 0.5) * 60, trackPts[idx].y + (rnd() - 0.5) * 60, NPC_TYPES[i]);
     npc.setPath(trackPts);
     npc.pathIdx = idx;
+    // NPC朝向跟随路径
+    const nNext = trackPts[(idx + 1) % trackPts.length];
+    npc.angle = Math.atan2(nNext.x - npc.x, -(nNext.y - npc.y));
     npcs.push(npc);
   }
 
@@ -999,9 +1001,42 @@ function showResult() {
 function drawTrack(ox, oy) {
   const t = trackData;
 
-  // 背景
-  ctx.fillStyle = t.bg;
+  // 渐变背景
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  if (currentTrack === 1) {
+    bgGrad.addColorStop(0, '#2a1060');
+    bgGrad.addColorStop(0.5, '#1a0a3e');
+    bgGrad.addColorStop(1, '#0a0520');
+  } else if (currentTrack === 2) {
+    bgGrad.addColorStop(0, '#4a1060');
+    bgGrad.addColorStop(0.5, '#3a0a40');
+    bgGrad.addColorStop(1, '#2a0820');
+  } else {
+    bgGrad.addColorStop(0, '#3a1a0a');
+    bgGrad.addColorStop(0.5, '#2a1008');
+    bgGrad.addColorStop(1, '#1a0a05');
+  }
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
+
+  // 星空/光点装饰
+  const starColors = currentTrack === 1 ? ['#ff44ff','#44ffff','#ffff44','#ffffff'] :
+                    currentTrack === 2 ? ['#ffb7c5','#ff69b4','#ffffff','#ffc0cb'] :
+                    ['#ff4444','#44ff44','#ffff00','#ff44ff'];
+  for (let i = 0; i < 40; i++) {
+    const sx = ((i * 173 + 50) % t.worldW) - ox;
+    const sy = ((i * 251 + 30) % t.worldH) - oy;
+    if (sx > -20 && sx < W + 20 && sy > -20 && sy < H + 20) {
+      const sc = starColors[i % starColors.length];
+      ctx.fillStyle = sc;
+      ctx.shadowColor = sc;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1.5 + (i % 3), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
 
   ctx.save();
   ctx.translate(-ox, -oy);
@@ -1066,71 +1101,62 @@ function drawTrack(ox, oy) {
   ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('START', s0.x, s0.y - t.roadW / 2 - 18);
 
-  // 赛道1: 城市建筑
-  if (currentTrack === 1) {
-    for (const b of t.buildings) {
-      // 楼体
-      ctx.fillStyle = b.color;
-      ctx.fillRect(b.x - b.w / 2, b.y - b.h, b.w, b.h);
-      // 窗户
-      if (b.lit) {
-        ctx.fillStyle = 'rgba(255,255,200,0.7)';
-        for (let wy = b.y - b.h + 10; wy < b.y - 10; wy += 18) {
-          for (let wx = b.x - b.w / 2 + 5; wx < b.x + b.w / 2 - 10; wx += 15) {
-            if (rnd() > 0.3) ctx.fillRect(wx, wy, 8, 10);
+  // 装饰绘制 - 所有赛道都用 decorations 数组
+  for (const d of t.decorations) {
+    if (d.type === 'tree') {
+      // 树干
+      ctx.fillStyle = '#8b6914';
+      ctx.fillRect(d.x - 5, d.y - d.size * 0.3, 10, d.size * 0.4);
+      // 树冠 - 多层樱花
+      ctx.fillStyle = d.color;
+      ctx.shadowColor = d.color;
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y - d.size * 0.5, d.size * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.beginPath();
+      ctx.arc(d.x - d.size * 0.15, d.y - d.size * 0.6, d.size * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    } else if (d.type === 'candy') {
+      // 糖果装饰
+      ctx.fillStyle = d.color;
+      ctx.shadowColor = d.color;
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.size * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      // 糖果条纹
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.size * 0.4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    } else {
+      // 默认建筑 - 发光建筑
+      ctx.fillStyle = d.color;
+      ctx.fillRect(d.x - d.w / 2, d.y - d.h, d.w, d.h);
+      // 发光窗户
+      if (d.lit) {
+        ctx.fillStyle = 'rgba(255,255,180,0.9)';
+        ctx.shadowColor = d.glow;
+        ctx.shadowBlur = 8;
+        for (let wy = d.y - d.h + 12; wy < d.y - 8; wy += 16) {
+          for (let wx = d.x - d.w / 2 + 6; wx < d.x + d.w / 2 - 8; wx += 14) {
+            if (rnd() > 0.2) ctx.fillRect(wx, wy, 7, 9);
           }
         }
-      }
-      // 楼顶灯光
-      if (rnd() > 0.5) {
-        ctx.fillStyle = '#ff0000';
-        ctx.shadowColor = '#ff0000';
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.arc(b.x, b.y - b.h - 3, 3, 0, Math.PI * 2);
-        ctx.fill();
         ctx.shadowBlur = 0;
       }
-    }
-  }
-
-  // 赛道2: 树木
-  if (currentTrack === 2) {
-    for (const tree of t.trees) {
-      // 树干
-      ctx.fillStyle = '#4a3010';
-      ctx.fillRect(tree.x - 4, tree.y - tree.size * 0.4, 8, tree.size * 0.5);
-      // 树冠
-      ctx.fillStyle = tree.color;
+      // 楼顶灯
+      ctx.fillStyle = '#ff0000';
+      ctx.shadowColor = '#ff0000';
+      ctx.shadowBlur = 10;
       ctx.beginPath();
-      ctx.arc(tree.x, tree.y - tree.size * 0.5, tree.size * 0.5, 0, Math.PI * 2);
+      ctx.arc(d.x, d.y - d.h - 3, 3, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = `hsl(${30 + rnd() * 20}, 80%, ${15 + rnd() * 15}%)`;
-      ctx.beginPath();
-      ctx.arc(tree.x + rnd() * 10 - 5, tree.y - tree.size * 0.6, tree.size * 0.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  // 赛道3: 工厂
-  if (currentTrack === 3) {
-    for (const p2 of t.pipes) {
-      ctx.fillStyle = p2.color;
-      ctx.fillRect(p2.x - p2.w / 2, p2.y - p2.h, p2.w, p2.h);
-      ctx.fillStyle = '#333';
-      ctx.fillRect(p2.x - p2.w / 2 - 5, p2.y - p2.h - 10, p2.w + 10, 15);
-    }
-    for (const c of t.chimneys) {
-      ctx.fillStyle = '#2a1a0a';
-      ctx.fillRect(c.x - c.r, c.y - c.r * 3, c.r * 2, c.r * 3);
-      ctx.fillStyle = '#ff4400';
-      ctx.shadowColor = '#ff4400';
-      ctx.shadowBlur = 20;
-      ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.003) * 0.3;
-      ctx.beginPath();
-      ctx.arc(c.x, c.y - c.r * 3, c.r * 0.7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
     }
   }
@@ -1230,6 +1256,12 @@ function gameLoop() {
 
     effects = effects.filter(e => e.update());
 
+    // 更新飘移文字
+    if (player && player.driftTexts) {
+      player.driftTexts = player.driftTexts.filter(t => t.life > 0);
+      player.driftTexts.forEach(t => t.life--);
+    }
+
     if (player.finished) showResult();
     updateHUD();
     drawMinimap();
@@ -1241,9 +1273,30 @@ function gameLoop() {
     npcs.forEach(npc => npc.draw(ctx, camera.x, camera.y));
     player.draw(ctx, camera.x, camera.y, avatarImg);
     effects.forEach(e => e.draw(ctx, camera.x, camera.y));
+    // 绘制飘移/复位文字
+    if (player && player.driftTexts) {
+      for (const t of player.driftTexts) {
+        const sx = player.x - camera.x, sy = player.y - camera.y;
+        const a = Math.min(1, t.life / 15);
+        ctx.globalAlpha = a;
+        ctx.font = 'bold 18px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = t.color;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = t.color;
+        ctx.fillText(t.text, sx, sy - 55);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+      }
+    }
   }
 
   requestAnimationFrame(gameLoop);
+}
+
+function showDriftText(text, color) {
+  if (!player) return;
+  player.driftTexts.push({ text, color, life: 40 });
 }
 
 // NPC 头像
