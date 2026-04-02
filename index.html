@@ -1,1 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>翠翠飞车 - Cuicui Speed Racing</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { width: 100%; height: 100%; overflow: hidden; touch-action: none; background: #0a0a1a; font-family: 'Segoe UI', 'PingFang SC', sans-serif; }
+    canvas { display: block; position: absolute; top: 0; left: 0; }
+    #gameCanvas { z-index: 1; }
+    #uiCanvas { z-index: 2; pointer-events: none; }
 
+    .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; background: linear-gradient(135deg, #0a0a2e 0%, #1a0a3e 50%, #0a1a2e 100%); transition: opacity 0.5s; }
+    .screen.hidden { opacity: 0; pointer-events: none; }
+
+    .title { font-size: clamp(32px, 8vw, 64px); font-weight: bold; color: #00ffaa; text-shadow: 0 0 20px #00ffaa, 0 0 40px #00ff88; margin-bottom: 20px; letter-spacing: 4px; }
+    .subtitle { font-size: clamp(14px, 3vw, 20px); color: #ffcc00; text-shadow: 0 0 10px #ffcc00; margin-bottom: 30px; }
+
+    .avatar-container { width: clamp(100px, 25vw, 150px); height: clamp(100px, 25vw, 150px); border-radius: 50%; border: 4px solid #00ffaa; box-shadow: 0 0 30px #00ffaa, inset 0 0 20px rgba(0,255,170,0.3); margin-bottom: 30px; overflow: hidden; }
+    .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
+
+    .track-list { display: flex; flex-direction: column; gap: 15px; width: clamp(280px, 80vw, 400px); }
+    .track-btn { padding: 15px 30px; font-size: clamp(16px, 4vw, 20px); border: none; border-radius: 12px; cursor: pointer; transition: all 0.3s; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .track-btn:nth-child(1) { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; box-shadow: 0 4px 15px rgba(46,204,113,0.4); }
+    .track-btn:nth-child(2) { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; box-shadow: 0 4px 15px rgba(155,89,182,0.4); }
+    .track-btn:nth-child(3) { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; box-shadow: 0 4px 15px rgba(231,76,60,0.4); }
+    .track-btn:hover { transform: scale(1.05); }
+    .track-btn:active { transform: scale(0.98); }
+
+    .controls-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.6); font-size: 12px; text-align: center; z-index: 10; }
+
+    #mobileControls { position: fixed; bottom: 20px; left: 0; right: 0; display: none; justify-content: space-between; padding: 0 20px; z-index: 50; }
+    .ctrl-group { display: flex; gap: 10px; align-items: flex-end; }
+    .ctrl-btn { width: clamp(60px, 15vw, 80px); height: clamp(60px, 15vw, 80px); border-radius: 50%; border: 3px solid; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.1s; }
+    .ctrl-btn:active { transform: scale(0.9); }
+    .ctrl-btn.gas { background: rgba(46,204,113,0.7); border-color: #2ecc71; }
+    .ctrl-btn.drift { background: rgba(241,196,15,0.7); border-color: #f1c40f; }
+    .ctrl-btn.nitro { background: rgba(230,126,34,0.7); border-color: #e67e22; }
+    .ctrl-btn.dir { background: rgba(52,152,219,0.7); border-color: #3498db; width: clamp(50px, 12vw, 65px); height: clamp(50px, 12vw, 65px); font-size: 24px; }
+
+    .dir-group { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 5px; }
+    .dir-group .ctrl-btn:nth-child(1) { grid-column: 2; }
+    .dir-group .ctrl-btn:nth-child(2) { grid-column: 1; grid-row: 2; }
+    .dir-group .ctrl-btn:nth-child(3) { grid-column: 2; grid-row: 2; }
+    .dir-group .ctrl-btn:nth-child(4) { grid-column: 3; grid-row: 2; }
+
+    .result-screen { text-align: center; }
+    .result-rank { font-size: clamp(80px, 20vw, 120px); font-weight: bold; margin: 20px 0; }
+    .rank-S { color: #ffd700; text-shadow: 0 0 30px #ffd700, 0 0 60px #ff8c00; }
+    .rank-A { color: #ff4444; text-shadow: 0 0 30px #ff4444; }
+    .rank-B { color: #44aaff; text-shadow: 0 0 30px #44aaff; }
+    .rank-C { color: #44ff44; text-shadow: 0 0 30px #44ff44; }
+    .rank-D { color: #aaaaaa; text-shadow: 0 0 20px #aaaaaa; }
+    .result-time { font-size: clamp(24px, 5vw, 36px); color: white; margin-bottom: 30px; }
+    .restart-btn { padding: 15px 50px; font-size: 20px; background: linear-gradient(135deg, #00ffaa, #00cc88); border: none; border-radius: 30px; color: #0a0a1a; font-weight: bold; cursor: pointer; box-shadow: 0 4px 20px rgba(0,255,170,0.5); }
+
+    #hud { position: fixed; top: 10px; left: 0; right: 0; display: none; justify-content: space-between; padding: 10px 15px; z-index: 40; pointer-events: none; }
+    .hud-item { background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 8px; border: 2px solid #00ffaa; color: white; font-size: 14px; }
+    .nitro-bar { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: clamp(200px, 50vw, 300px); height: 20px; background: rgba(0,0,0,0.7); border-radius: 10px; border: 2px solid #e67e22; overflow: hidden; display: none; z-index: 40; }
+    .nitro-fill { height: 100%; background: linear-gradient(90deg, #e67e22, #f39c12, #e74c3c); transition: width 0.1s; box-shadow: 0 0 10px #e67e22; }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <canvas id="uiCanvas"></canvas>
+
+  <div id="menuScreen" class="screen">
+    <div class="avatar-container">
+      <img src="./cuicui.jpg" alt="Cuicui Avatar" onerror="this.style.display='none'">
+    </div>
+    <div class="title">翠翠飞车</div>
+    <div class="subtitle">Cuicui Speed Racing</div>
+    <div class="track-list">
+      <button class="track-btn" onclick="startGame(1)">赛道一: 翠绿草原</button>
+      <button class="track-btn" onclick="startGame(2)">赛道二: 霓虹都市</button>
+      <button class="track-btn" onclick="startGame(3)">赛道三: 极速山道</button>
+    </div>
+  </div>
+
+  <div id="resultScreen" class="screen hidden result-screen">
+    <div class="title">完赛!</div>
+    <div id="resultRank" class="result-rank rank-S">S</div>
+    <div id="resultTime" class="result-time">00:00.00</div>
+    <button class="restart-btn" onclick="showMenu()">再来一局</button>
+  </div>
+
+  <div id="hud">
+    <div class="hud-item" id="lapInfo">1/3 圈</div>
+    <div class="hud-item" id="speedInfo">0 km/h</div>
+    <div class="hud-item" id="timeInfo">00:00.00</div>
+  </div>
+  <div class="nitro-bar"><div class="nitro-fill" id="nitroFill"></div></div>
+
+  <div id="mobileControls">
+    <div class="ctrl-group">
+      <div class="dir-group">
+        <button class="ctrl-btn dir" id="btnUp">▲</button>
+        <button class="ctrl-btn dir" id="btnLeft">◀</button>
+        <button class="ctrl-btn dir" id="btnDown">▼</button>
+        <button class="ctrl-btn dir" id="btnRight">▶</button>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <button class="ctrl-btn drift" id="btnDrift">漂<br>移</button>
+      <button class="ctrl-btn nitro" id="btnNitro">喷</button>
+      <button class="ctrl-btn gas" id="btnGas">油<br>门</button>
+    </div>
+  </div>
+
+  <div class="controls-hint">PC: WASD移动 | 空格漂移 | Shift加速 | 手机端: 下方按钮</div>
+
+<script>
+// ============== 游戏核心 ==============
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const uiCanvas = document.getElementById('uiCanvas');
+const uiCtx = uiCanvas.getContext('2d');
+
+let W, H;
+function resize() {
+  W = canvas.width = uiCanvas.width = window.innerWidth;
+  H = canvas.height = uiCanvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// 检测移动端
+const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+if (isMobile) {
+  document.getElementById('mobileControls').style.display = 'flex';
+  document.querySelector('.controls-hint').style.display = 'none';
+}
+
+// ============== 赛道定义 ==============
+const TRACKS = {
+  1: { // 翠绿草原 - 椭圆形
+    name: '翠绿草原',
+    width: 6000,
+    height: 3000,
+    bgColor: '#1a3d1a',
+    roadColor: '#3a3a3a',
+    lineColor: '#ffffff',
+    checkPoints: [],
+    generate() {
+      const pts = [];
+      const cx = this.width / 2, cy = this.height / 2;
+      const rx = 2200, ry = 1100;
+      for (let i = 0; i <= 360; i += 5) {
+        const rad = i * Math.PI / 180;
+        pts.push({ x: cx + Math.cos(rad) * rx, y: cy + Math.sin(rad) * ry });
+      }
+      this.checkPoints = pts;
+      return pts;
+    }
+  },
+  2: { // 霓虹都市 - 8字形
+    name: '霓虹都市',
+    width: 6000,
+    height: 3000,
+    bgColor: '#0a0a2e',
+    roadColor: '#2a2a4e',
+    lineColor: '#ff00ff',
+    generate() {
+      const pts = [];
+      const cx = this.width / 2, cy = this.height / 2;
+      // 8字形 - 左侧圆
+      for (let i = 180; i >= 0; i -= 5) {
+        const rad = i * Math.PI / 180;
+        pts.push({ x: cx - 1400 + Math.cos(rad) * 700, y: cy + Math.sin(rad) * 700 });
+      }
+      // 连接段
+      pts.push({ x: cx - 700, y: cy });
+      pts.push({ x: cx + 700, y: cy });
+      // 右侧圆
+      for (let i = 0; i <= 180; i += 5) {
+        const rad = i * Math.PI / 180;
+        pts.push({ x: cx + 1400 + Math.cos(rad) * 700, y: cy + Math.sin(rad) * 700 });
+      }
+      pts.push({ x: cx + 700, y: cy });
+      pts.push({ x: cx - 700, y: cy });
+      this.checkPoints = pts;
+      return pts;
+    }
+  },
+  3: { // 极速山道 - 蜿蜒山路
+    name: '极速山道',
+    width: 6000,
+    height: 3000,
+    bgColor: '#2a1a0a',
+    roadColor: '#4a3a2a',
+    lineColor: '#ff6600',
+    generate() {
+      const pts = [];
+      const cx = this.width / 2, cy = this.height / 2;
+      // 蜿蜒山路
+      const path = [
+        { x: cx - 2200, y: cy + 800 },
+        { x: cx - 1800, y: cy + 600 },
+        { x: cx - 1400, y: cy + 800 },
+        { x: cx - 1000, y: cy + 400 },
+        { x: cx - 600, y: cy + 700 },
+        { x: cx - 200, y: cy + 300 },
+        { x: cx + 200, y: cy + 600 },
+        { x: cx + 600, y: cy + 200 },
+        { x: cx + 1000, y: cy + 500 },
+        { x: cx + 1400, y: cy + 100 },
+        { x: cx + 1800, y: cy + 400 },
+        { x: cx + 2000, y: cy + 100 },
+        { x: cx + 2200, y: cy - 200 },
+        { x: cx + 2000, y: cy - 600 },
+        { x: cx + 1600, y: cy - 800 },
+        { x: cx + 1200, y: cy - 600 },
+        { x: cx + 800, y: cy - 900 },
+        { x: cx + 400, y: cy - 700 },
+        { x: cx, y: cy - 1000 },
+        { x: cx - 400, y: cy - 800 },
+        { x: cx - 800, y: cy - 1000 },
+        { x: cx - 1200, y: cy - 700 },
+        { x: cx - 1600, y: cy - 900 },
+        { x: cx - 2000, y: cy - 600 },
+        { x: cx - 2200, y: cy - 200 },
+      ];
+      // 平滑插值
+      for (let s = 0; s < path.length; s++) {
+        const p0 = path[(s - 1 + path.length) % path.length];
+        const p1 = path[s];
+        const p2 = path[(s + 1) % path.length];
+        const p3 = path[(s + 2) % path.length];
+        for (let t = 0; t < 1; t += 0.1) {
+          const x = catmullRom(p0.x, p1.x, p2.x, p3.x, t);
+          const y = catmullRom(p0.y, p1.y, p2.y, p3.y, t);
+          pts.push({ x, y });
+        }
+      }
+      this.checkPoints = pts;
+      return pts;
+    }
+  }
+};
+
+function catmullRom(p0, p1, p2, p3, t) {
+  return 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+}
+
+// ============== 粒子系统 ==============
+class Particle {
+  constructor(x, y, vx, vy, life, size, color, type = 'circle') {
+    this.x = x; this.y = y; this.vx = vx; this.vy = vy;
+    this.life = life; this.maxLife = life; this.size = size; this.color = color; this.type = type;
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    this.vx *= 0.98; this.vy *= 0.98;
+    this.life--;
+    return this.life > 0;
+  }
+  draw(ctx, camX, camY) {
+    const alpha = this.life / this.maxLife;
+    ctx.globalAlpha = alpha * 0.7;
+    if (this.type === 'circle') {
+      ctx.beginPath();
+      ctx.arc(this.x - camX, this.y - camY, this.size * alpha, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.fill();
+    } else if (this.type === 'flame') {
+      const grad = ctx.createRadialGradient(this.x - camX, this.y - camY, 0, this.x - camX, this.y - camY, this.size);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.3, '#ffff00');
+      grad.addColorStop(0.6, '#ff6600');
+      grad.addColorStop(1, 'rgba(255,50,0,0)');
+      ctx.beginPath();
+      ctx.arc(this.x - camX, this.y - camY, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+class SparkParticle extends Particle {
+  draw(ctx, camX, camY) {
+    const alpha = this.life / this.maxLife;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.moveTo(this.x - camX, this.y - camY);
+    ctx.lineTo(this.x - camX + this.vx * 3, this.y - camY + this.vy * 3);
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ============== 车辆类 ==============
+class Car {
+  constructor(x, y, color, isPlayer = false) {
+    this.x = x; this.y = y;
+    this.angle = -Math.PI / 2;
+    this.speed = 0;
+    this.maxSpeed = isPlayer ? 8 : 6;
+    this.accel = 0.15;
+    this.turnSpeed = 0.05;
+    this.color = color;
+    this.isPlayer = isPlayer;
+    this.nitro = 100;
+    this.maxNitro = 100;
+    this.isDrifting = false;
+    this.driftAngle = 0;
+    this.driftTime = 0;
+    this.carWidth = 40;
+    this.carHeight = 60;
+    this.lap = 1;
+    this.checkpoint = 0;
+    this.totalTime = 0;
+    this.finished = false;
+    this.lastCpAngle = -Math.PI / 2;
+    this.xp = 0;
+    this.particles = [];
+  }
+
+  update(keys, trackPts) {
+    if (this.finished) return;
+
+    const maxSpd = this.nitro > 0 && keys.nitro ? 12 : this.maxSpeed;
+
+    // 油门
+    if (keys.up) {
+      this.speed += this.accel;
+    } else {
+      this.speed *= 0.98;
+    }
+    this.speed = Math.min(this.speed, maxSpd);
+    this.speed = Math.max(this.speed, -maxSpd * 0.3);
+
+    // 转向
+    if (keys.left) this.angle -= this.turnSpeed * (this.speed > 0 ? 1 : -1);
+    if (keys.right) this.angle += this.turnSpeed * (this.speed > 0 ? 1 : -1);
+
+    // 漂移
+    this.isDrifting = keys.drift && Math.abs(this.speed) > 3;
+    if (this.isDrifting) {
+      this.driftTime++;
+      this.driftAngle = Math.sin(this.driftTime * 0.15) * 0.4;
+      this.speed *= 0.97;
+      // 漂移烟雾
+      if (Math.random() < 0.5) {
+        const bx = this.x - Math.sin(this.angle) * 20;
+        const by = this.y + Math.cos(this.angle) * 20;
+        this.particles.push(new Particle(
+          bx + (Math.random() - 0.5) * 10,
+          by + (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2,
+          40, 15 + Math.random() * 10, 'rgba(200,200,200,0.5)'
+        ));
+      }
+    } else {
+      this.driftAngle *= 0.9;
+      if (this.driftTime > 0) {
+        // 漂移结算奖励氮气
+        const reward = Math.min(50, this.driftTime * 0.5);
+        this.nitro = Math.min(this.maxNitro, this.nitro + reward);
+        this.driftTime = 0;
+      }
+    }
+
+    // 持续漂移积累氮气
+    if (this.isDrifting) {
+      this.nitro = Math.min(this.maxNitro, this.nitro + 0.3);
+    }
+
+    // 氮气消耗
+    if (keys.nitro && this.nitro > 0 && this.speed > 0) {
+      this.nitro -= 2;
+      // 喷焰粒子
+      const fx = this.x - Math.sin(this.angle) * 35;
+      const fy = this.y + Math.cos(this.angle) * 35;
+      for (let i = 0; i < 3; i++) {
+        this.particles.push(new Particle(
+          fx + (Math.random() - 0.5) * 8,
+          fy + (Math.random() - 0.5) * 8,
+          -Math.sin(this.angle) * (5 + Math.random() * 3) + (Math.random() - 0.5) * 2,
+          Math.cos(this.angle) * (5 + Math.random() * 3) + (Math.random() - 0.5) * 2,
+          15 + Math.random() * 10, 12 + Math.random() * 8, '#ff6600', 'flame'
+        ));
+      }
+    }
+
+    // 移动
+    const moveAngle = this.angle + this.driftAngle;
+    this.x += Math.sin(moveAngle) * this.speed;
+    this.y -= Math.cos(moveAngle) * this.speed;
+
+    // 撞墙检测
+    const dist = this.distToTrack(trackPts);
+    if (dist > 90) { // 赛道宽度约180
+      this.speed *= 0.6;
+      // 撞墙火花
+      if (Math.random() < 0.3) {
+        this.particles.push(new SparkParticle(
+          this.x, this.y,
+          (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5,
+          20, 3, '#ffff00'
+        ));
+      }
+    }
+
+    // 边界限制
+    this.x = Math.max(100, Math.min(trackPts.length > 0 ? 6000 - 100 : 6000 - 100, this.x));
+    this.y = Math.max(100, Math.min(trackPts.length > 0 ? 3000 - 100 : 3000 - 100, this.y));
+
+    // 检查点
+    this.updateCheckpoint(trackPts);
+
+    // 粒子更新
+    this.particles = this.particles.filter(p => p.update());
+
+    // 氮气自然恢复
+    this.nitro = Math.min(this.maxNitro, this.nitro + 0.05);
+
+    this.totalTime += 1 / 60;
+  }
+
+  distToTrack(pts) {
+    let minD = Infinity;
+    for (const p of pts) {
+      const d = Math.hypot(this.x - p.x, this.y - p.y);
+      if (d < minD) minD = d;
+    }
+    return minD;
+  }
+
+  updateCheckpoint(pts) {
+    if (!pts || pts.length === 0) return;
+    let nearest = -1, nearDist = Infinity;
+    for (let i = 0; i < pts.length; i++) {
+      const d = Math.hypot(this.x - pts[i].x, this.y - pts[i].y);
+      if (d < nearDist) { nearDist = d; nearest = i; }
+    }
+    if (nearest === -1) return;
+
+    const segCount = 8; // 分段数
+    const seg = Math.floor(nearest / (pts.length / segCount));
+    const cp = seg;
+
+    if (cp !== this.checkpoint) {
+      const diff = cp - this.checkpoint;
+      if (diff > 0 && diff < segCount / 2) {
+        this.checkpoint = cp;
+      } else if (diff < 0 && Math.abs(diff) > segCount / 2) {
+        this.checkpoint = cp;
+      }
+    }
+
+    // 跨圈检测 (从最后一个检查点回到0)
+    if (this.checkpoint >= segCount - 1 && cp <= 1 && cp < this.checkpoint) {
+      if (nearest < pts.length * 0.1 && this.lastCpAngle > Math.PI * 0.8) {
+        this.lap++;
+        if (this.lap > 3) {
+          this.finished = true;
+        }
+      }
+    }
+    this.lastCpAngle = this.angle;
+  }
+
+  draw(ctx, camX, camY, avatarImg) {
+    const sx = this.x - camX;
+    const sy = this.y - camY;
+
+    // 绘制粒子
+    for (const p of this.particles) {
+      p.draw(ctx, camX, camY);
+    }
+
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(this.angle + this.driftAngle);
+
+    // 车身阴影
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(3, 3, this.carWidth / 2, this.carHeight / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 车身
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.roundRect(-this.carWidth / 2, -this.carHeight / 2, this.carWidth, this.carHeight, 8);
+    ctx.fill();
+
+    // 车身渐变高光
+    const carGrad = ctx.createLinearGradient(-this.carWidth / 2, 0, this.carWidth / 2, 0);
+    carGrad.addColorStop(0, 'rgba(255,255,255,0.2)');
+    carGrad.addColorStop(0.5, 'rgba(255,255,255,0.4)');
+    carGrad.addColorStop(1, 'rgba(255,255,255,0.1)');
+    ctx.fillStyle = carGrad;
+    ctx.beginPath();
+    ctx.roundRect(-this.carWidth / 2 + 2, -this.carHeight / 2 + 2, this.carWidth - 4, this.carHeight - 4, 6);
+    ctx.fill();
+
+    // 玩家头像
+    if (this.isPlayer && avatarImg && avatarImg.complete && avatarImg.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, -5, 12, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(avatarImg, -12, -17, 24, 24);
+      ctx.restore();
+    }
+
+    // 漂移时车身倾斜视觉
+    if (this.isDrifting) {
+      ctx.fillStyle = 'rgba(255,200,100,0.3)';
+      ctx.beginPath();
+      ctx.roundRect(-this.carWidth / 2, -this.carHeight / 2, this.carWidth, this.carHeight, 8);
+      ctx.fill();
+    }
+
+    // 车轮
+    ctx.fillStyle = '#222';
+    ctx.fillRect(-this.carWidth / 2 - 3, -this.carHeight / 2 + 5, 5, 12);
+    ctx.fillRect(this.carWidth / 2 - 2, -this.carHeight / 2 + 5, 5, 12);
+    ctx.fillRect(-this.carWidth / 2 - 3, this.carHeight / 2 - 17, 5, 12);
+    ctx.fillRect(this.carWidth / 2 - 2, this.carHeight / 2 - 17, 5, 12);
+
+    // 前灯
+    ctx.fillStyle = '#ffffaa';
+    ctx.shadowColor = '#ffffaa';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.ellipse(-10, -this.carHeight / 2 + 3, 5, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(10, -this.carHeight / 2 + 3, 5, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 尾灯
+    ctx.fillStyle = '#ff3333';
+    ctx.shadowColor = '#ff3333';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.ellipse(-12, this.carHeight / 2 - 3, 4, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(12, this.carHeight / 2 - 3, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
+
+    // 漂移文字
+    if (this.isPlayer && this.isDrifting && this.driftTime > 10) {
+      ctx.fillStyle = '#ffcc00';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('DRIFT!', sx, sy - 45);
+      ctx.font = '12px sans-serif';
+      ctx.fillText(`+${Math.floor(this.driftTime * 0.5)}`, sx, sy - 30);
+    }
+  }
+}
+
+// ============== 游戏状态 ==============
+let gameState = 'menu'; // menu, playing, result
+let currentTrack = 1;
+let player, trackPts = [];
+let camera = { x: 0, y: 0 };
+let keys = { up: false, down: false, left: false, right: false, drift: false, nitro: false };
+let startTime = 0;
+let raceTime = 0;
+let avatarImg = new Image();
+avatarImg.src = './cuicui.jpg';
+
+// ============== 输入控制 ==============
+// PC键盘
+document.addEventListener('keydown', e => {
+  if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.up = true;
+  if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.down = true;
+  if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.left = true;
+  if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.right = true;
+  if (e.key === ' ') { keys.drift = true; e.preventDefault(); }
+  if (e.key === 'Shift') keys.nitro = true;
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.up = false;
+  if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.down = false;
+  if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.left = false;
+  if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.right = false;
+  if (e.key === ' ') keys.drift = false;
+  if (e.key === 'Shift') keys.nitro = false;
+});
+
+// 移动端按钮
+function setupMobileBtn(id, keyName) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  const setKey = (v) => { keys[keyName] = v; };
+  btn.addEventListener('touchstart', e => { e.preventDefault(); setKey(true); }, { passive: false });
+  btn.addEventListener('touchend', e => { e.preventDefault(); setKey(false); }, { passive: false });
+  btn.addEventListener('touchcancel', e => { e.preventDefault(); setKey(false); }, { passive: false });
+  btn.addEventListener('mousedown', () => setKey(true));
+  btn.addEventListener('mouseup', () => setKey(false));
+  btn.addEventListener('mouseleave', () => setKey(false));
+}
+
+setupMobileBtn('btnUp', 'up');
+setupMobileBtn('btnDown', 'down');
+setupMobileBtn('btnLeft', 'left');
+setupMobileBtn('btnRight', 'right');
+setupMobileBtn('btnDrift', 'drift');
+setupMobileBtn('btnNitro', 'nitro');
+setupMobileBtn('btnGas', 'up');
+
+// ============== 游戏流程 ==============
+function startGame(trackId) {
+  currentTrack = trackId;
+  const track = TRACKS[trackId];
+  trackPts = track.generate();
+
+  // 起点位置
+  const startPt = trackPts[0];
+  player = new Car(startPt.x, startPt.y, '#00cc77', true);
+  player.angle = -Math.PI / 2;
+  camera.x = player.x - W / 2;
+  camera.y = player.y - H / 2;
+
+  document.getElementById('menuScreen').classList.add('hidden');
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('hud').style.display = 'flex';
+  document.querySelector('.nitro-bar').style.display = 'block';
+
+  startTime = Date.now();
+  raceTime = 0;
+  gameState = 'playing';
+}
+
+function showMenu() {
+  document.getElementById('menuScreen').classList.remove('hidden');
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('hud').style.display = 'none';
+  document.querySelector('.nitro-bar').style.display = 'none';
+  gameState = 'menu';
+}
+
+function showResult() {
+  const time = raceTime;
+  const rank = time < 30 ? 'S' : time < 45 ? 'A' : time < 60 ? 'B' : time < 80 ? 'C' : 'D';
+  const rankEl = document.getElementById('resultRank');
+  rankEl.textContent = rank;
+  rankEl.className = 'result-rank rank-' + rank;
+  document.getElementById('resultTime').textContent = formatTime(time);
+  document.getElementById('resultScreen').classList.remove('hidden');
+  document.getElementById('hud').style.display = 'none';
+  document.querySelector('.nitro-bar').style.display = 'none';
+  gameState = 'result';
+}
+
+function formatTime(t) {
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  const ms = Math.floor((t % 1) * 100);
+  return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}.${ms.toString().padStart(2,'0')}`;
+}
+
+// ============== 渲染 ==============
+function drawTrack(track, camX, camY) {
+  const pts = track.checkPoints;
+
+  // 背景
+  ctx.fillStyle = track.bgColor;
+  ctx.fillRect(0, 0, W, H);
+
+  // 赛道地面
+  if (pts.length > 2) {
+    // 赛道外边缘
+    ctx.save();
+    ctx.translate(-camX, -camY);
+    ctx.lineWidth = 160;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = track.roadColor;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    ctx.stroke();
+
+    // 赛道中线
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = track.lineColor;
+    ctx.setLineDash([30, 20]);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 赛道边界
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = track.lineColor;
+    ctx.shadowColor = track.lineColor;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
+  }
+
+  // 起点线
+  if (pts.length > 0) {
+    const startX = pts[0].x - camX;
+    const startY = pts[0].y - camY;
+    ctx.save();
+    ctx.translate(startX, startY);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#ffffff';
+    for (let i = -80; i < 80; i += 20) {
+      for (let j = 0; j < 10; j += 10) {
+        ctx.fillRect(i, j, 10, 10);
+        ctx.fillStyle = i % 40 === 0 ? '#ffffff' : '#000000';
+      }
+    }
+    ctx.restore();
+
+    // 起点文字
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('START', startX, startY - 100);
+  }
+
+  // 背景星星/粒子效果
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  for (let i = 0; i < 50; i++) {
+    const bx = ((i * 137 + 50) % track.width) - camX;
+    const by = ((i * 251 + 30) % track.height) - camY;
+    if (bx > -10 && bx < W + 10 && by > -10 && by < H + 10) {
+      ctx.beginPath();
+      ctx.arc(bx, by, 1 + (i % 3), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 霓虹城市装饰
+  if (currentTrack === 2) {
+    ctx.save();
+    ctx.translate(-camX, -camY);
+    const colors = ['#ff00ff', '#00ffff', '#ff6600', '#00ff00'];
+    for (let i = 0; i < 20; i++) {
+      const bx = 200 + (i * 317) % (track.width - 400);
+      const by = 200 + (i * 523) % (track.height - 400);
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.shadowColor = colors[i % colors.length];
+      ctx.shadowBlur = 15;
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText(['霓虹', '都市', '夜', '城', '街'][i % 5], bx, by);
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+}
+
+function drawHUD() {
+  if (!player) return;
+
+  document.getElementById('lapInfo').textContent = `${Math.min(player.lap, 3)}/3 圈`;
+  document.getElementById('speedInfo').textContent = `${Math.floor(Math.abs(player.speed) * 30)} km/h`;
+  document.getElementById('timeInfo').textContent = formatTime(raceTime);
+  document.getElementById('nitroFill').style.width = `${player.nitro}%`;
+}
+
+// ============== 游戏主循环 ==============
+function gameLoop() {
+  if (gameState === 'playing') {
+    raceTime = (Date.now() - startTime) / 1000;
+
+    player.update(keys, trackPts);
+
+    // 相机跟随
+    const targetCamX = player.x - W / 2;
+    const targetCamY = player.y - H / 2;
+    camera.x += (targetCamX - camera.x) * 0.1;
+    camera.y += (targetCamY - camera.y) * 0.1;
+
+    // 限制相机范围
+    camera.x = Math.max(0, Math.min(TRACKS[currentTrack].width - W, camera.x));
+    camera.y = Math.max(0, Math.min(TRACKS[currentTrack].height - H, camera.y));
+
+    if (player.finished) {
+      showResult();
+    }
+
+    drawHUD();
+  }
+
+  // 渲染
+  ctx.clearRect(0, 0, W, H);
+  if (gameState !== 'menu' && player) {
+    drawTrack(TRACKS[currentTrack], camera.x, camera.y);
+    player.draw(ctx, camera.x, camera.y, avatarImg);
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// 预加载头像
+avatarImg.onerror = () => { avatarImg = null; };
+
+// 启动
+gameLoop();
+</script>
+</body>
+</html>
