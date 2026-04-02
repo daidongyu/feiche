@@ -8,7 +8,7 @@
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <title>翠泣1.00</title>
+    <title>翠泣2.0</title>
     <style>
       * {
         margin: 0;
@@ -82,6 +82,35 @@
       .skills-area {
         display: flex;
         gap: 10px;
+      }
+      
+      .finisher-area {
+        display: flex;
+        gap: 8px;
+        margin-left: 10px;
+      }
+      
+      .finisher-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 14px;
+        border-radius: 50%;
+        background: rgba(255, 0, 255, 0.2);
+        border: 2px solid rgba(255, 0, 255, 0.5);
+        color: #ff88ff;
+        position: relative;
+      }
+      
+      .finisher-btn.ready {
+        background: rgba(255, 0, 255, 0.5);
+        border-color: #ff00ff;
+        box-shadow: 0 0 15px rgba(255, 0, 255, 0.6);
+        animation: finisherPulse 1s ease-in-out infinite;
+      }
+      
+      @keyframes finisherPulse {
+        0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 255, 0.4); }
+        50% { box-shadow: 0 0 25px rgba(255, 0, 255, 0.8); }
       }
 
       /* 动作键区域 */
@@ -410,20 +439,23 @@
 
       /* 终结技文字 */
       .finisher-text {
-        position: absolute;
-        top: 35%;
+        position: fixed;
+        top: 30%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: clamp(28px, 8vw, 48px);
+        font-size: clamp(32px, 10vw, 56px);
         font-weight: 900;
         color: #fff;
         text-shadow:
           0 0 20px #ff00ff,
-          0 0 40px #ff00ff;
+          0 0 40px #ff00ff,
+          0 0 80px #ff00ff;
         pointer-events: none;
-        animation: finisherText 2s ease-out forwards;
+        animation: finisherText 2.5s ease-out forwards;
         text-align: center;
         white-space: nowrap;
+        z-index: 1000;
+        width: 100%;
       }
 
       @keyframes finisherText {
@@ -697,6 +729,10 @@
             <button class="game-btn skill-btn ready" id="btnSkill1">⚡</button>
             <button class="game-btn skill-btn ready" id="btnSkill2">💨</button>
             <button class="game-btn skill-btn ready" id="btnSkill3">💪</button>
+          </div>
+          <div class="finisher-area">
+            <button class="game-btn finisher-btn" id="btnFinisherSmall">U</button>
+            <button class="game-btn finisher-btn" id="btnFinisherBig">I</button>
           </div>
         </div>
 
@@ -1197,8 +1233,19 @@
           if (input.isPressed('KeyW')) this.switchWeapon('DUAL_DAGGER', game)
           if (input.isPressed('KeyE')) this.switchWeapon('DUAL_HOOK', game)
 
-          if (input.isPressed('KeyU')) this.tryFinisher(false, game)
-          if (input.isPressed('KeyI')) this.tryFinisher(true, game)
+          // 终结技 - 任何状态都可使用（优先检测）
+          if (input.isPressed('KeyU') || input.isPressed('Digit4')) {
+            if (this.combo >= 30) {
+              this.executeFinisher(false, game)
+              return
+            }
+          }
+          if (input.isPressed('KeyI') || input.isPressed('Digit5')) {
+            if (this.combo >= 100) {
+              this.executeFinisher(true, game)
+              return
+            }
+          }
         }
 
         handleAttack(input, game) {
@@ -2554,6 +2601,8 @@
           addTouch('btnSkill1', 'Digit1')
           addTouch('btnSkill2', 'Digit2')
           addTouch('btnSkill3', 'Digit3')
+          addTouch('btnFinisherSmall', 'Digit4')
+          addTouch('btnFinisherBig', 'Digit5')
 
           // 武器切换按钮
           document
@@ -2810,6 +2859,26 @@
             const bossPct = (this.boss.health / this.boss.maxHealth) * 100
             document.getElementById('bossHealthFill').style.width =
               bossPct + '%'
+          }
+          
+          // 终结技按钮状态
+          const btnSmall = document.getElementById('btnFinisherSmall')
+          const btnBig = document.getElementById('btnFinisherBig')
+          if (btnSmall && btnBig) {
+            if (this.player.combo >= 30) {
+              btnSmall.classList.add('ready')
+              btnSmall.textContent = 'U'
+            } else {
+              btnSmall.classList.remove('ready')
+              btnSmall.textContent = 'U'
+            }
+            if (this.player.combo >= 100) {
+              btnBig.classList.add('ready')
+              btnBig.textContent = 'I'
+            } else {
+              btnBig.classList.remove('ready')
+              btnBig.textContent = 'I'
+            }
           }
         }
 
