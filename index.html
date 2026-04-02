@@ -1,1003 +1,1996 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>翠翠飞车 3D - Cuicui Speed Racing</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: none; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
-    #game-container { width: 100%; height: 100%; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>翠泣 - 极致连击</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+        
+        body {
+            background: #050508;
+            overflow: hidden;
+            font-family: 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            max-width: 1280px;
+            aspect-ratio: 16/9;
+        }
+        
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            box-shadow: 0 0 60px rgba(0, 255, 136, 0.2);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .combo-display {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            text-align: right;
+            transition: transform 0.1s;
+        }
+        
+        .combo-number {
+            font-size: 96px;
+            font-weight: 900;
+            color: #ffdd00;
+            text-shadow: 
+                0 0 10px #ff6600,
+                0 0 30px #ff3300,
+                0 0 60px #ff0000;
+            line-height: 1;
+            animation: comboPulse 0.3s ease-out;
+            font-style: italic;
+        }
+        
+        .combo-text {
+            font-size: 20px;
+            color: #ff8844;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            font-weight: bold;
+        }
+        
+        @keyframes comboPulse {
+            0% { transform: scale(1.8) rotate(-5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        
+        .weapon-indicator {
+            position: absolute;
+            bottom: 120px;
+            left: 30px;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .weapon-icon {
+            width: 70px;
+            height: 70px;
+            border: 3px solid #333;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            background: rgba(0,0,0,0.7);
+            color: #666;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .weapon-icon.active {
+            border-color: currentColor;
+            background: rgba(0,0,0,0.9);
+            transform: scale(1.15);
+            box-shadow: 0 0 30px currentColor;
+        }
+        
+        .weapon-icon::after {
+            content: attr(data-key);
+            position: absolute;
+            bottom: -20px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .health-bar-container {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            width: 350px;
+        }
+        
+        .health-bar {
+            height: 24px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #444;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff3333, #ff6666, #ff9999);
+            transition: width 0.2s;
+            box-shadow: 0 0 15px #ff3333;
+            position: relative;
+        }
+        
+        .health-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.4), transparent);
+        }
+        
+        .finisher-bar {
+            margin-top: 10px;
+            height: 16px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #444;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .finisher-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff00ff, #ff66ff, #ff99ff);
+            transition: width 0.1s;
+            box-shadow: 0 0 10px #ff00ff;
+        }
+        
+        .finisher-ready {
+            animation: finisherGlow 0.4s ease-in-out infinite alternate;
+        }
+        
+        @keyframes finisherGlow {
+            from { box-shadow: 0 0 10px #ff00ff; }
+            to { box-shadow: 0 0 30px #ff00ff, 0 0 60px #ff88ff; }
+        }
+        
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.4);
+            font-size: 14px;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+        }
+        
+        .menu-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(10,20,30,0.95) 0%, rgba(0,0,0,0.98) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+        }
+        
+        .menu-title {
+            font-size: 120px;
+            font-weight: 900;
+            color: #00ff88;
+            text-shadow: 
+                0 0 30px #00ff88,
+                0 0 60px #00aa66,
+                0 0 100px #006633;
+            margin-bottom: 20px;
+            letter-spacing: 30px;
+            animation: titlePulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes titlePulse {
+            0%, 100% { text-shadow: 0 0 30px #00ff88, 0 0 60px #00aa66; }
+            50% { text-shadow: 0 0 50px #00ff88, 0 0 100px #00aa66, 0 0 150px #006633; }
+        }
+        
+        .menu-subtitle {
+            font-size: 28px;
+            color: #ff8844;
+            margin-bottom: 40px;
+            letter-spacing: 12px;
+            text-transform: uppercase;
+        }
+        
+        .avatar-container {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: 4px solid #00ff88;
+            overflow: hidden;
+            margin-bottom: 50px;
+            box-shadow: 0 0 40px rgba(0,255,136,0.4);
+            position: relative;
+        }
+        
+        .avatar-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: avatarShine 3s infinite;
+        }
+        
+        @keyframes avatarShine {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+        
+        .avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .menu-btn {
+            padding: 25px 80px;
+            font-size: 32px;
+            background: linear-gradient(135deg, #00ff88, #00aa66);
+            border: none;
+            border-radius: 50px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 40px rgba(0,255,136,0.4);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        
+        .menu-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 60px rgba(0,255,136,0.6);
+        }
+        
+        .damage-number {
+            position: absolute;
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffdd00;
+            text-shadow: 0 0 10px #ff6600, 0 0 20px #ff3300;
+            pointer-events: none;
+            animation: damageFloat 1s ease-out forwards;
+            font-style: italic;
+        }
+        
+        @keyframes damageFloat {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            20% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+            100% { transform: translateY(-60px) scale(1); opacity: 0; }
+        }
+        
+        .finisher-text {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 72px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 
+                0 0 30px #ff00ff,
+                0 0 60px #ff00ff,
+                0 0 100px #ff00ff;
+            pointer-events: none;
+            animation: finisherText 2.5s ease-out forwards;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            white-space: nowrap;
+        }
+        
+        @keyframes finisherText {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.3) rotate(5deg); opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 0; }
+        }
 
-    .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
-    .screen.hidden { opacity: 0; pointer-events: none; }
+        #mobileControls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+            pointer-events: auto;
+            padding: 0 20px;
+        }
 
-    #menuScreen { background: linear-gradient(180deg, #0a0a20 0%, #1a1a3e 50%, #0a2a3e 100%); }
+        .mobile-btn {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            backdrop-filter: blur(10px);
+        }
 
-    .title-wrap { text-align: center; margin-bottom: 20px; }
-    .title { font-size: clamp(36px, 10vw, 72px); font-weight: 900; background: linear-gradient(135deg, #00ffaa, #00ccff, #ff00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 20px rgba(0,255,170,0.5)); letter-spacing: 6px; }
-    .subtitle { font-size: clamp(12px, 3vw, 18px); color: #ffcc00; letter-spacing: 4px; margin-top: 8px; text-shadow: 0 0 10px #ffcc00; }
+        .mobile-btn:active {
+            background: rgba(0,255,136,0.4);
+            border-color: #00ff88;
+        }
 
-    .avatar-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
-    .avatar-item { text-align: center; }
-    .avatar-item .label { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 4px; }
-    .avatar-circle { width: clamp(50px, 12vw, 70px); height: clamp(50px, 12vw, 70px); border-radius: 50%; border: 3px solid #00ffaa; box-shadow: 0 0 15px rgba(0,255,170,0.4); overflow: hidden; }
-    .avatar-circle:first-child { border-color: #00ff77; box-shadow: 0 0 20px rgba(0,255,120,0.5); }
-    .avatar-circle img, .avatar-circle canvas { width: 100%; height: 100%; object-fit: cover; }
+        .weapon-hint {
+            position: absolute;
+            bottom: 200px;
+            left: 30px;
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+        }
 
-    .track-list { display: flex; flex-direction: column; gap: 10px; width: clamp(280px, 80vw, 400px); }
-    .track-btn { position: relative; padding: 14px 25px; font-size: clamp(14px, 3.5vw, 17px); border: none; border-radius: 14px; cursor: pointer; transition: all 0.3s; font-weight: bold; }
-    .track-btn:nth-child(1) { background: linear-gradient(135deg, #1a4a2a, #2ecc71); color: white; box-shadow: 0 5px 20px rgba(46,204,113,0.4); }
-    .track-btn:nth-child(2) { background: linear-gradient(135deg, #2a1a4a, #9b59b6); color: white; box-shadow: 0 5px 20px rgba(155,89,182,0.4); }
-    .track-btn:nth-child(3) { background: linear-gradient(135deg, #4a2a1a, #e74c3c); color: white; box-shadow: 0 5px 20px rgba(231,76,60,0.4); }
-    .track-btn:hover { transform: scale(1.03); filter: brightness(1.1); }
-    .track-btn:active { transform: scale(0.98); }
-    .track-btn .desc { display: block; font-size: 11px; opacity: 0.7; margin-top: 3px; font-weight: normal; }
-
-    #resultScreen { background: rgba(0,0,0,0.92); }
-    .result-rank { font-size: clamp(100px, 25vw, 150px); font-weight: 900; animation: rankPop 0.5s ease-out; }
-    @keyframes rankPop { from{transform:scale(0);} to{transform:scale(1);} }
-    .rank-S { color: #ffd700; text-shadow: 0 0 50px #ffd700, 0 0 100px #ff8c00; }
-    .rank-A { color: #ff4444; text-shadow: 0 0 40px #ff4444; }
-    .rank-B { color: #44aaff; text-shadow: 0 0 40px #44aaff; }
-    .rank-C { color: #44ff88; text-shadow: 0 0 30px #44ff88; }
-    .rank-D { color: #aaaaaa; text-shadow: 0 0 20px #aaaaaa; }
-    .result-time { font-size: clamp(22px, 5vw, 36px); color: white; margin: 10px 0 5px; }
-    .result-kills { font-size: 15px; color: #ff8888; margin-bottom: 20px; }
-    .restart-btn { padding: 14px 50px; font-size: 18px; background: linear-gradient(135deg, #00ffaa, #00cc88); border: none; border-radius: 30px; color: #000; font-weight: bold; cursor: pointer; box-shadow: 0 5px 25px rgba(0,255,170,0.5); }
-
-    /* HUD */
-    #hud { position: fixed; top: 5px; left: 0; right: 0; display: none; justify-content: space-between; padding: 5px 10px; z-index: 50; pointer-events: none; }
-    .hud-item { background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 8px; border: 2px solid #00ffaa; color: white; font-size: clamp(10px, 2vw, 13px); font-weight: bold; white-space: nowrap; }
-    .hud-item span { color: #00ffaa; }
-
-    .nitro-bar { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); width: clamp(150px, 40vw, 250px); height: 18px; background: rgba(0,0,0,0.8); border-radius: 9px; border: 2px solid #e67e22; overflow: hidden; display: none; z-index: 50; }
-    .nitro-fill { height: 100%; background: linear-gradient(90deg, #e67e22, #f39c12, #ff4444); transition: width 0.05s; box-shadow: 0 0 10px #e67e22; }
-
-    #startHint { position: fixed; bottom: 50%; left: 50%; transform: translate(-50%,50%); font-size: 18px; color: #ffcc00; text-shadow: 0 0 15px #ffcc00; display: none; z-index: 40; animation: blink 1s ease-in-out infinite; white-space: nowrap; }
-    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
-
-    /* 手机控制 */
-    #leftControls { position: fixed; bottom: 60px; left: 10px; display: none; gap: 6px; z-index: 60; }
-    .dir-btn { width: clamp(50px, 13vw, 65px); height: clamp(50px, 13vw, 65px); border-radius: 50%; background: rgba(52,152,219,0.75); border: 3px solid #3498db; display: flex; align-items: center; justify-content: center; font-size: clamp(16px, 4vw, 22px); color: white; cursor: pointer; touch-action: manipulation; user-select: none; }
-    .dir-btn:active, .dir-btn.active { background: rgba(41,128,185,0.9); transform: scale(0.88); }
-
-    #rightControls { position: fixed; bottom: 60px; right: 10px; display: none; flex-direction: column; gap: 8px; z-index: 60; }
-    .action-btn { width: clamp(50px, 13vw, 65px); height: clamp(50px, 13vw, 65px); border-radius: 50%; border: 3px solid; display: flex; align-items: center; justify-content: center; font-size: clamp(10px, 2.5vw, 13px); font-weight: bold; color: white; cursor: pointer; touch-action: manipulation; user-select: none; }
-    .action-btn:active { transform: scale(0.85); }
-    .action-btn.nitro { background: rgba(230,126,34,0.8); border-color: #e67e22; }
-    .action-btn.drift { background: rgba(241,196,15,0.8); border-color: #f1c40f; }
-    .action-btn.reset { background: rgba(200,60,60,0.8); border-color: #e74c3c; }
-
-    .minimap { position: fixed; bottom: 15px; right: 15px; width: clamp(70px, 17vw, 100px); height: clamp(50px, 13vw, 75px); background: rgba(0,0,0,0.8); border: 2px solid #00ffaa; border-radius: 6px; display: none; z-index: 50; }
-    #minimapCanvas { width: 100%; height: 100%; }
-  </style>
+        @media (max-width: 768px) {
+            #mobileControls {
+                display: flex;
+                justify-content: space-between;
+            }
+            .controls-hint {
+                display: none;
+            }
+            .menu-title {
+                font-size: 60px;
+                letter-spacing: 15px;
+            }
+            .combo-number {
+                font-size: 60px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div id="game-container"></div>
-
-  <div id="menuScreen" class="screen">
-    <div class="title-wrap">
-      <div class="title">翠翠飞车 3D</div>
-      <div class="subtitle">CUI CUI RACING 3D</div>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div class="health-bar-container">
+                <div class="health-bar">
+                    <div class="health-fill" id="healthFill" style="width: 100%"></div>
+                </div>
+                <div class="finisher-bar">
+                    <div class="finisher-fill" id="finisherFill" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="combo-display" id="comboDisplay" style="opacity: 0">
+                <div class="combo-number" id="comboNumber">0</div>
+                <div class="combo-text">HIT COMBO</div>
+            </div>
+            <div class="weapon-indicator">
+                <div class="weapon-icon active" id="weapon1" data-key="Q" style="color: #00ff88" title="双刀">⚔️</div>
+                <div class="weapon-icon" id="weapon2" data-key="W" style="color: #ff4444" title="双匕">🗡️</div>
+                <div class="weapon-icon" id="weapon3" data-key="E" style="color: #ffaa00" title="双钩">🪝</div>
+            </div>
+            <div class="weapon-hint">按 Q/W/E 切换武器</div>
+            <div class="controls-hint">
+                [A/D]移动 [J]攻击 [K]跳跃 [L]闪避 [SPACE]挑空 [U]小终结技(30连) [I]大终结技(100连)
+            </div>
+        </div>
+        
+        <div id="mobileControls">
+            <div style="display: flex; gap: 10px;">
+                <button class="mobile-btn" id="btnLeft">←</button>
+                <button class="mobile-btn" id="btnRight">→</button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="mobile-btn" id="btnAttack">攻</button>
+                <button class="mobile-btn" id="btnJump">跳</button>
+                <button class="mobile-btn" id="btnDodge">闪</button>
+            </div>
+        </div>
+        
+        <div class="menu-screen" id="menuScreen">
+            <h1 class="menu-title">翠泣</h1>
+            <div class="avatar-container">
+                <img src="cuicui.jpg" alt="翠翠" id="avatarImg">
+            </div>
+            <p class="menu-subtitle">Devil May Cry Style</p>
+            <button class="menu-btn" id="startBtn">开始游戏</button>
+        </div>
     </div>
-    <div class="avatar-row">
-      <div class="avatar-item"><div class="avatar-circle"><img src="./cuicui.jpg" alt="" onerror="this.style.display='none'"></div><div class="label">翠翠</div></div>
-      <div class="avatar-item"><div class="avatar-circle"><canvas id="npc2" width="80" height="80"></canvas></div><div class="label">二叔</div></div>
-      <div class="avatar-item"><div class="avatar-circle"><canvas id="npc3" width="80" height="80"></canvas></div><div class="label">二婶</div></div>
-      <div class="avatar-item"><div class="avatar-circle"><canvas id="npc4" width="80" height="80"></canvas></div><div class="label">嘉姐</div></div>
-      <div class="avatar-item"><div class="avatar-circle"><canvas id="npc5" width="80" height="80"></canvas></div><div class="label">万总</div></div>
-    </div>
-    <div class="track-list">
-      <button class="track-btn" onclick="startGame(1)">🌈 彩虹风车岛<span class="desc">岛屿桥梁 风车旋转</span></button>
-      <button class="track-btn" onclick="startGame(2)">🏙️ 穿梭之城<span class="desc">城市霓虹 8字赛道</span></button>
-      <button class="track-btn" onclick="startGame(3)">🏖️ 极速海滨<span class="desc">海岸公路 灯塔棕榈</span></button>
-    </div>
-  </div>
 
-  <div id="resultScreen" class="screen hidden">
-    <div class="title-wrap"><div class="title" style="font-size:clamp(24px,7vw,42px)">完赛!</div></div>
-    <div id="resultRank" class="result-rank rank-S">S</div>
-    <div id="resultTime" class="result-time">00:00.00</div>
-    <div id="resultKills" class="result-kills">撞毁 0 辆车</div>
-    <button class="restart-btn" onclick="showMenu()">再来一局</button>
-  </div>
-
-  <div id="hud">
-    <div class="hud-item">⏱ <span id="hudTime">00:00</span></div>
-    <div class="hud-item">🏁 <span id="hudLap">1/3</span></div>
-    <div class="hud-item">⚡ <span id="hudSpeed">0</span> km/h</div>
-    <div class="hud-item">💥 <span id="hudKills">0</span></div>
-  </div>
-  <div class="nitro-bar"><div class="nitro-fill" id="nitroFill"></div></div>
-  <div id="startHint">←→转向 空格漂移 Shift喷气</div>
-
-  <div id="leftControls">
-    <button class="dir-btn" id="btnLeft">◀</button>
-    <button class="dir-btn" id="btnRight">▶</button>
-  </div>
-  <div id="rightControls">
-    <button class="action-btn nitro" id="btnNitro">🔥喷</button>
-    <button class="action-btn drift" id="btnDrift">💨漂</button>
-    <button class="action-btn reset" id="btnReset">↩</button>
-  </div>
-  <div class="minimap"><canvas id="minimapCanvas" width="120" height="90"></canvas></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-// ============== 工具函数 ==============
-const rnd = () => Math.random();
-const lerp = (a, b, t) => a + (b - a) * t;
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const hypot = (x, y) => Math.sqrt(x * x + y * y);
-const dist = (ax, ay, bx, by) => hypot(ax - bx, ay - by);
-function cr(p0, p1, p2, p3, t) {
-  return 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
-}
-function fmtTime(t) {
-  const m = Math.floor(t / 60), s = Math.floor(t % 60), ms = Math.floor((t % 1) * 100);
-  return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}.${ms.toString().padStart(2,'0')}`;
-}
-
-// ============== Three.js 核心 ==============
-let scene, camera, renderer, clock;
-let playerCar, npcCars = [], trackGroup;
-let currentTrackId = 1;
-let gameState = 'menu';
-let keys = { left: false, right: false, drift: false, nitro: false };
-let startTime = 0, raceTime = 0;
-const avatarImg = new Image();
-avatarImg.src = './cuicui.jpg';
-
-function initThree() {
-  const container = document.getElementById('game-container');
-  scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x0a0a1a, 100, 800);
-
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-  camera.position.set(0, 15, 20);
-
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  container.appendChild(renderer.domElement);
-
-  clock = new THREE.Clock();
-
-  // 光照
-  const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
-  scene.add(ambientLight);
-
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-  dirLight.position.set(100, 200, 100);
-  dirLight.castShadow = true;
-  dirLight.shadow.mapSize.width = 2048;
-  dirLight.shadow.mapSize.height = 2048;
-  dirLight.shadow.camera.near = 10;
-  dirLight.shadow.camera.far = 500;
-  dirLight.shadow.camera.left = -300;
-  dirLight.shadow.camera.right = 300;
-  dirLight.shadow.camera.top = 300;
-  dirLight.shadow.camera.bottom = -300;
-  scene.add(dirLight);
-
-  // 移动端检测
-  if (/Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768) {
-    document.getElementById('leftControls').style.display = 'flex';
-    document.getElementById('rightControls').style.display = 'flex';
-    document.querySelector('.minimap').style.display = 'block';
-    setupMobileControls();
-  }
-
-  window.addEventListener('resize', onWindowResize);
-  document.addEventListener('keydown', onKeyDown);
-  document.addEventListener('keyup', onKeyUp);
-}
-
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function onKeyDown(e) {
-  if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.left = true;
-  if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.right = true;
-  if (e.key === ' ') { keys.drift = true; e.preventDefault(); }
-  if (e.key === 'Shift') keys.nitro = true;
-  if (e.key === 'r' || e.key === 'R') { if (gameState === 'playing') resetCar(); }
-}
-function onKeyUp(e) {
-  if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.left = false;
-  if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.right = false;
-  if (e.key === ' ') keys.drift = false;
-  if (e.key === 'Shift') keys.nitro = false;
-}
-
-function setupMobileControls() {
-  const btnL = document.getElementById('btnLeft');
-  const btnR = document.getElementById('btnRight');
-  btnL.addEventListener('touchstart', e => { e.preventDefault(); keys.left = true; btnL.classList.add('active'); }, { passive: false });
-  btnL.addEventListener('touchend', e => { e.preventDefault(); keys.left = false; btnL.classList.remove('active'); }, { passive: false });
-  btnL.addEventListener('touchcancel', e => { keys.left = false; btnL.classList.remove('active'); });
-  btnR.addEventListener('touchstart', e => { e.preventDefault(); keys.right = true; btnR.classList.add('active'); }, { passive: false });
-  btnR.addEventListener('touchend', e => { e.preventDefault(); keys.right = false; btnR.classList.remove('active'); }, { passive: false });
-  btnR.addEventListener('touchcancel', e => { keys.right = false; btnR.classList.remove('active'); });
-
-  ['btnNitro', 'btnDrift'].forEach((id, i) => {
-    const btn = document.getElementById(id);
-    const key = ['nitro', 'drift'][i];
-    btn.addEventListener('touchstart', e => { e.preventDefault(); keys[key] = true; }, { passive: false });
-    btn.addEventListener('touchend', e => { e.preventDefault(); keys[key] = false; }, { passive: false });
-    btn.addEventListener('touchcancel', e => { keys[key] = false; });
-  });
-  document.getElementById('btnReset').addEventListener('touchstart', e => { e.preventDefault(); resetCar(); }, { passive: false });
-}
-
-// ============== 赛道定义 ==============
-const TRACKS = {
-  1: { name: '彩虹风车岛', worldW: 600, worldH: 400, roadW: 18, bgColor: 0x1a4a7a, roadColor: 0x333333, wallColor: 0xff3333,
-    ctrl: [[80,320],[100,280],[150,240],[200,200],[280,180],[360,170],[420,180],[480,200],[500,250],[490,300],[450,340],[380,360],[300,365],[220,360],[150,350],[90,330]],
-    decorations: [
-      {type:'windmill', x:150, y:120, h:25, color:0xff4444},
-      {type:'windmill', x:480, y:100, h:30, color:0x44ff44},
-      {type:'windmill', x:300, y:80, h:28, color:0x4444ff},
-      {type:'rainbow', count:15},
-    ]
-  },
-  2: { name: '穿梭之城', worldW: 600, worldH: 400, roadW: 16, bgColor: 0x0a0a20, roadColor: 0x222233, wallColor: 0x00ffff,
-    ctrl: [[80,350],[150,340],[220,320],[280,280],[300,230],[280,180],[240,140],[180,120],[120,130],[80,170],[100,220],[140,260],[100,300],[80,340]],
-    decorations: [
-      {type:'building', x:50, y:100, w:30, h:60, color:0xff00ff},
-      {type:'building', x:520, y:80, w:35, h:70, color:0x00ffff},
-      {type:'neon_sign', x:300, y:60, text:'穿梭之城', color:0xffff00},
-      {type:'building', x:550, y:200, w:25, h:50, color:0xff6600},
-      {type:'building', x:40, y:220, w:28, h:55, color:0x00ff66},
-    ]
-  },
-  3: { name: '极速海滨', worldW: 600, worldH: 400, roadW: 17, bgColor: 0x0a2040, roadColor: 0x2a2a2a, wallColor: 0x00ff88,
-    ctrl: [[80,360],[180,340],[280,310],[380,300],[460,320],[500,350],[490,380],[400,385],[300,380],[200,370],[100,375],[60,360]],
-    decorations: [
-      {type:'palm', x:50, y:100, h:35, color:0x228B22},
-      {type:'palm', x:550, y:120, h:38, color:0x2E8B57},
-      {type:'palm', x:100, y:280, h:32, color:0x32CD32},
-      {type:'lighthouse', x:520, y:300, h:40, color:0xffdd44},
-      {type:'palm', x:450, y:150, h:36, color:0x006400},
-    ]
-  }
-};
-
-// ============== 赛道构建 ==============
-function buildTrack(trackId) {
-  const track = TRACKS[trackId];
-  if (trackGroup) scene.remove(trackGroup);
-  trackGroup = new THREE.Group();
-
-  // 平滑路径
-  const path = [];
-  const ctrl = track.ctrl;
-  for (let s = 0; s < ctrl.length; s++) {
-    const p0 = ctrl[(s - 1 + ctrl.length) % ctrl.length];
-    const p1 = ctrl[s];
-    const p2 = ctrl[(s + 1) % ctrl.length];
-    const p3 = ctrl[(s + 2) % ctrl.length];
-    for (let t = 0; t < 1; t += 0.08) {
-      path.push({ x: cr(p0[0], p1[0], p2[0], p3[0], t), y: cr(p0[1], p1[1], p2[1], p3[1], t) });
+// ==================== 音频系统 ====================
+class AudioSystem {
+    constructor() {
+        this.ctx = null;
+        this.enabled = false;
+        this.comboSounds = [];
     }
-  }
-  track.path = path;
-
-  // 地面
-  const groundGeo = new THREE.PlaneGeometry(track.worldW + 100, track.worldH + 100);
-  const groundMat = new THREE.MeshLambertMaterial({ color: track.bgColor });
-  const ground = new THREE.Mesh(groundGeo, groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.set(track.worldW / 2, -0.5, track.worldH / 2);
-  ground.receiveShadow = true;
-  trackGroup.add(ground);
-
-  // 赛道地面
-  for (let i = 0; i < path.length; i++) {
-    const curr = path[i];
-    const next = path[(i + 1) % path.length];
-    const dx = next.x - curr.x, dy = next.y - curr.y;
-    const len = hypot(dx, dy) || 1;
-    const angle = Math.atan2(dy, dx);
-
-    const segGeo = new THREE.PlaneGeometry(len + 1, track.roadW);
-    const segMat = new THREE.MeshLambertMaterial({ color: track.roadColor });
-    const seg = new THREE.Mesh(segGeo, segMat);
-    seg.rotation.x = -Math.PI / 2;
-    seg.rotation.z = -angle;
-    seg.position.set(curr.x + dx / 2, 0.01, curr.y + dy / 2);
-    seg.receiveShadow = true;
-    trackGroup.add(seg);
-
-    // 边线
-    const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-    const lineGeo = new THREE.PlaneGeometry(len + 1, 0.5);
-    const leftLine = new THREE.Mesh(lineGeo, lineMat);
-    leftLine.rotation.x = -Math.PI / 2;
-    leftLine.rotation.z = -angle;
-    leftLine.position.set(curr.x + dx / 2 - Math.cos(angle) * track.roadW / 2, 0.05, curr.y + dy / 2 - Math.sin(angle) * track.roadW / 2);
-    trackGroup.add(leftLine);
-
-    const rightLine = new THREE.Mesh(lineGeo, lineMat.clone());
-    rightLine.rotation.x = -Math.PI / 2;
-    rightLine.rotation.z = -angle;
-    rightLine.position.set(curr.x + dx / 2 + Math.cos(angle) * track.roadW / 2, 0.05, curr.y + dy / 2 + Math.sin(angle) * track.roadW / 2);
-    trackGroup.add(rightLine);
-
-    // 墙壁
-    const wallGeo = new THREE.BoxGeometry(1.5, 3, track.roadW + 4);
-    const wallMat = new THREE.MeshLambertMaterial({ color: track.wallColor, emissive: track.wallColor, emissiveIntensity: 0.3 });
-    const leftWall = new THREE.Mesh(wallGeo, wallMat);
-    leftWall.rotation.y = -angle;
-    leftWall.position.set(curr.x + dx / 2 - Math.cos(angle) * track.roadW / 2, 1.5, curr.y + dy / 2 - Math.sin(angle) * track.roadW / 2);
-    trackGroup.add(leftWall);
-
-    const rightWall = new THREE.Mesh(wallGeo, wallMat.clone());
-    rightWall.rotation.y = -angle;
-    rightWall.position.set(curr.x + dx / 2 + Math.cos(angle) * track.roadW / 2, 1.5, curr.y + dy / 2 + Math.sin(angle) * track.roadW / 2);
-    trackGroup.add(rightWall);
-  }
-
-  // 起点线
-  const startGeo = new THREE.PlaneGeometry(track.roadW, 4);
-  const startMat = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide });
-  const startLine = new THREE.Mesh(startGeo, startMat);
-  startLine.rotation.x = -Math.PI / 2;
-  startLine.position.set(path[0].x, 0.1, path[0].y);
-  trackGroup.add(startLine);
-
-  // 装饰物
-  for (const d of track.decorations) {
-    if (d.type === 'windmill') {
-      // 风车塔
-      const towerGeo = new THREE.CylinderGeometry(1.5, 2, d.h, 8);
-      const towerMat = new THREE.MeshLambertMaterial({ color: 0xf5f5dc });
-      const tower = new THREE.Mesh(towerGeo, towerMat);
-      tower.position.set(d.x, d.h / 2, d.y);
-      tower.castShadow = true;
-      trackGroup.add(tower);
-
-      // 风车叶片
-      const bladeGroup = new THREE.Group();
-      bladeGroup.position.set(d.x, d.h, d.y);
-      bladeGroup.userData.blades = true;
-      for (let i = 0; i < 4; i++) {
-        const bladeGeo = new THREE.BoxGeometry(1, d.h * 0.8, 0.3);
-        const bladeMat = new THREE.MeshLambertMaterial({ color: d.color, emissive: d.color, emissiveIntensity: 0.3 });
-        const blade = new THREE.Mesh(bladeGeo, bladeMat);
-        blade.position.y = -d.h * 0.4;
-        const bladeHolder = new THREE.Group();
-        bladeHolder.add(blade);
-        bladeHolder.rotation.z = (i * Math.PI) / 2;
-        bladeGroup.add(bladeHolder);
-      }
-      trackGroup.add(bladeGroup);
-
-    } else if (d.type === 'building') {
-      const bGeo = new THREE.BoxGeometry(d.w, d.h, d.w);
-      const bMat = new THREE.MeshLambertMaterial({ color: d.color, emissive: d.color, emissiveIntensity: 0.2 });
-      const building = new THREE.Mesh(bGeo, bMat);
-      building.position.set(d.x, d.h / 2, d.y);
-      building.castShadow = true;
-      trackGroup.add(building);
-
-      // 窗户
-      const windowMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
-      for (let wy = 5; wy < d.h - 5; wy += 8) {
-        for (let wx = -d.w / 2 + 4; wx < d.w / 2 - 4; wx += 6) {
-          const wGeo = new THREE.PlaneGeometry(3, 4);
-          const win = new THREE.Mesh(wGeo, windowMat);
-          win.position.set(d.x + wx, wy, d.y + d.w / 2 + 0.1);
-          trackGroup.add(win);
+    
+    init() {
+        try {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.enabled = true;
+        } catch(e) {
+            console.warn('音频初始化失败');
         }
-      }
-
-    } else if (d.type === 'neon_sign') {
-      // 霓虹招牌用3D文字代替
-      const canvas = document.createElement('canvas');
-      canvas.width = 256; canvas.height = 64;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, 256, 64);
-      ctx.font = 'bold 40px sans-serif';
-      ctx.fillStyle = '#' + d.color.toString(16).padStart(6, '0');
-      ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = 15;
-      ctx.textAlign = 'center';
-      ctx.fillText(d.text, 128, 45);
-      try {
-        const tex = new THREE.CanvasTexture(canvas);
-        const signGeo = new THREE.PlaneGeometry(30, 8);
-        const signMat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true });
-        const sign = new THREE.Mesh(signGeo, signMat);
-        sign.position.set(d.x, 20, d.y);
-        trackGroup.add(sign);
-      } catch(e) {}
-
-    } else if (d.type === 'palm') {
-      // 棕榈树
-      const trunkGeo = new THREE.CylinderGeometry(0.8, 1.2, d.h, 6);
-      const trunkMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-      trunk.position.set(d.x, d.h / 2, d.y);
-      trunk.castShadow = true;
-      trackGroup.add(trunk);
-
-      // 树叶
-      for (let i = 0; i < 8; i++) {
-        const leafGeo = new THREE.ConeGeometry(2, d.h * 0.5, 4);
-        const leafMat = new THREE.MeshLambertMaterial({ color: d.color });
-        const leaf = new THREE.Mesh(leafGeo, leafMat);
-        leaf.position.set(d.x + Math.cos(i) * 2, d.h + 2, d.y + Math.sin(i) * 2);
-        leaf.rotation.z = Math.cos(i) * 0.5;
-        leaf.rotation.x = Math.sin(i) * 0.5;
-        trackGroup.add(leaf);
-      }
-
-    } else if (d.type === 'lighthouse') {
-      const lhGeo = new THREE.CylinderGeometry(2, 4, d.h, 8);
-      const lhMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-      const lh = new THREE.Mesh(lhGeo, lhMat);
-      lh.position.set(d.x, d.h / 2, d.y);
-      lh.castShadow = true;
-      trackGroup.add(lh);
-
-      // 灯
-      const lightGeo = new THREE.SphereGeometry(2, 8, 8);
-      const lightMat = new THREE.MeshBasicMaterial({ color: d.color });
-      const light = new THREE.Mesh(lightGeo, lightMat);
-      light.position.set(d.x, d.h, d.y);
-      trackGroup.add(light);
-
-      const pointLight = new THREE.PointLight(d.color, 2, 50);
-      pointLight.position.set(d.x, d.h, d.y);
-      trackGroup.add(pointLight);
     }
-  }
-
-  scene.add(trackGroup);
-  return track;
+    
+    playHitSound(combo) {
+        if (!this.enabled || !this.ctx) return;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        const baseFreq = 80 + Math.min(combo * 5, 600);
+        osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.3, this.ctx.currentTime + 0.08);
+        
+        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.08);
+    }
+    
+    playHeavyHit() {
+        if (!this.enabled || !this.ctx) return;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.25);
+        
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.25);
+    }
+    
+    playDodgeSound() {
+        if (!this.enabled || !this.ctx) return;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1000, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.2);
+        
+        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.2);
+    }
+    
+    playFinisherSound(isBig) {
+        if (!this.enabled || !this.ctx) return;
+        
+        const duration = isBig ? 1.5 : 0.8;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sawtooth';
+        const startFreq = isBig ? 150 : 200;
+        osc.frequency.setValueAtTime(startFreq, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(startFreq * 4, this.ctx.currentTime + duration * 0.3);
+        osc.frequency.exponentialRampToValueAtTime(startFreq * 0.5, this.ctx.currentTime + duration);
+        
+        gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.3, this.ctx.currentTime + duration * 0.5);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    }
+    
+    playWeaponSwitch() {
+        if (!this.enabled || !this.ctx) return;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(600, this.ctx.currentTime + 0.1);
+        
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.1);
+    }
 }
 
-// ============== 3D 车辆 ==============
-function createCar(config, isPlayer = false) {
-  const carGroup = new THREE.Group();
-
-  // 车身
-  const bodyGeo = new THREE.BoxGeometry(4, 1.5, 7);
-  const bodyMat = new THREE.MeshLambertMaterial({ color: config.color });
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 1.5;
-  body.castShadow = true;
-  carGroup.add(body);
-
-  // 车顶
-  const roofGeo = new THREE.BoxGeometry(3, 1.2, 3.5);
-  const roof = new THREE.Mesh(roofGeo, bodyMat);
-  roof.position.set(0, 2.8, -0.5);
-  roof.castShadow = true;
-  carGroup.add(roof);
-
-  // 挡风玻璃
-  const glassMat = new THREE.MeshLambertMaterial({ color: 0x88ccff, transparent: true, opacity: 0.6 });
-  const glassGeo = new THREE.BoxGeometry(2.8, 1, 0.2);
-  const glass = new THREE.Mesh(glassGeo, glassMat);
-  glass.position.set(0, 2.7, 1.2);
-  glass.rotation.x = 0.3;
-  carGroup.add(glass);
-
-  // 玩家头像
-  if (isPlayer) {
-    // 使用圆形背景代替头像
-    const avatarGeo = new THREE.CircleGeometry(1.2, 16);
-    const avatarMat = new THREE.MeshBasicMaterial({ color: 0x00cc77, side: THREE.DoubleSide });
-    const avatar = new THREE.Mesh(avatarGeo, avatarMat);
-    avatar.position.set(0, 2.7, -0.5);
-    avatar.rotation.y = Math.PI;
-    carGroup.add(avatar);
-  }
-
-  // 车轮
-  const wheelGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.6, 12);
-  const wheelMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
-  const wheelPositions = [[-2, 0.8, 2], [2, 0.8, 2], [-2, 0.8, -2.5], [2, 0.8, -2.5]];
-  for (const pos of wheelPositions) {
-    const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-    wheel.position.set(...pos);
-    wheel.rotation.z = Math.PI / 2;
-    carGroup.add(wheel);
-  }
-
-  // 前灯
-  const lightGeo = new THREE.BoxGeometry(0.8, 0.4, 0.2);
-  const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
-  const leftLight = new THREE.Mesh(lightGeo, lightMat);
-  leftLight.position.set(-1.2, 1.5, 3.6);
-  carGroup.add(leftLight);
-  const rightLight = new THREE.Mesh(lightGeo, lightMat);
-  rightLight.position.set(1.2, 1.5, 3.6);
-  carGroup.add(rightLight);
-
-  // 尾灯
-  const tailGeo = new THREE.BoxGeometry(0.6, 0.3, 0.2);
-  const tailMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-  const leftTail = new THREE.Mesh(tailGeo, tailMat);
-  leftTail.position.set(-1.5, 1.5, -3.6);
-  carGroup.add(leftTail);
-  const rightTail = new THREE.Mesh(tailGeo, tailMat);
-  rightTail.position.set(1.5, 1.5, -3.6);
-  carGroup.add(rightTail);
-
-  // 喷焰（玩家）
-  if (isPlayer) {
-    const flameGeo = new THREE.ConeGeometry(0.8, 4, 8);
-    const flameMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0 });
-    const flame = new THREE.Mesh(flameGeo, flameMat);
-    flame.position.set(0, 1.2, -5);
-    flame.rotation.x = Math.PI / 2;
-    flame.userData.isFlame = true;
-    carGroup.add(flame);
-  }
-
-  // NPC名称
-  if (!isPlayer) {
-    const labelCanvas = document.createElement('canvas');
-    labelCanvas.width = 128; labelCanvas.height = 32;
-    const ctx = labelCanvas.getContext('2d');
-    const colorHex = '#' + config.color.toString(16).padStart(6, '0');
-    ctx.fillStyle = colorHex;
-    ctx.fillRect(0, 0, 128, 32);
-    ctx.font = 'bold 20px sans-serif';
-    ctx.fillStyle = 'white';
-    ctx.textAlign = 'center';
-    ctx.fillText(config.name, 64, 24);
-    try {
-      const labelTex = new THREE.CanvasTexture(labelCanvas);
-      const labelGeo = new THREE.PlaneGeometry(4, 1);
-      const labelMat = new THREE.MeshBasicMaterial({ map: labelTex, side: THREE.DoubleSide, transparent: true });
-      const label = new THREE.Mesh(labelGeo, labelMat);
-      label.position.set(0, 4.5, 0);
-      label.userData.isLabel = true;
-      carGroup.add(label);
-    } catch(e) {}
-  }
-
-  return carGroup;
+// ==================== 输入处理 ====================
+class InputHandler {
+    constructor() {
+        this.keys = {};
+        this.keysPressed = {};
+        this.keysReleased = {};
+        
+        window.addEventListener('keydown', (e) => {
+            this.keys[e.code] = true;
+            if (!this.keysPressed[e.code]) {
+                this.keysPressed[e.code] = true;
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            this.keys[e.code] = false;
+            this.keysPressed[e.code] = false;
+            this.keysReleased[e.code] = true;
+        });
+    }
+    
+    isDown(code) { return !!this.keys[code]; }
+    isPressed(code) {
+        if (this.keysPressed[code]) {
+            this.keysPressed[code] = false;
+            return true;
+        }
+        return false;
+    }
 }
 
-// ============== 游戏状态 ==============
-const NPC_TYPES = [
-  { name:'二叔', color:0xe74c3c, speed:0.35 },
-  { name:'二婶', color:0x9b59b6, speed:0.28 },
-  { name:'嘉姐', color:0x3498db, speed:0.38 },
-  { name:'万总', color:0xf39c12, speed:0.45 }
-];
+// ==================== 粒子系统 ====================
+class ParticleSystem {
+    constructor() {
+        this.particles = [];
+        this.trails = [];
+    }
+    
+    emit(x, y, color, count, speed, life, type = 'normal') {
+        for (let i = 0; i < count; i++) {
+            const angle = (Math.PI * 2 * i) / count + Math.random() * 0.8;
+            const vel = speed * (0.5 + Math.random() * 0.8);
+            this.particles.push({
+                x, y,
+                vx: Math.cos(angle) * vel,
+                vy: Math.sin(angle) * vel,
+                life: life * (0.7 + Math.random() * 0.6),
+                maxLife: life,
+                color,
+                size: 3 + Math.random() * 5,
+                type,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.3
+            });
+        }
+    }
+    
+    emitTrail(x, y, color, width) {
+        this.trails.push({
+            x, y, color, width,
+            life: 20,
+            maxLife: 20
+        });
+    }
+    
+    update() {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.4;
+            p.vx *= 0.98;
+            p.rotation += p.rotationSpeed;
+            p.life--;
+            
+            if (p.life <= 0) this.particles.splice(i, 1);
+        }
+        
+        for (let i = this.trails.length - 1; i >= 0; i--) {
+            this.trails[i].life--;
+            if (this.trails[i].life <= 0) this.trails.splice(i, 1);
+        }
+    }
+    
+    draw(ctx) {
+        // 绘制拖尾
+        for (const t of this.trails) {
+            const alpha = t.life / t.maxLife;
+            ctx.globalAlpha = alpha * 0.5;
+            ctx.fillStyle = t.color;
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, t.width * alpha, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // 绘制粒子
+        for (const p of this.particles) {
+            const alpha = p.life / p.maxLife;
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = p.color;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation);
+            
+            if (p.type === 'spark') {
+                ctx.fillRect(-p.size, -p.size/3, p.size*2, p.size/1.5);
+            } else {
+                ctx.beginPath();
+                ctx.arc(0, 0, p.size * alpha, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+    }
+}
 
-let player = {
-  x: 80, z: 320,
-  angle: 0,
-  speed: 0,
-  minSpeed: 0.3,
-  maxSpeed: 1.2,
-  turnSpeed: 0.04,
-  nitro: 100,
-  isDrifting: false,
-  driftAngle: 0,
-  driftTime: 0,
-  lap: 1,
-  checkpoint: 0,
-  kills: 0,
-  mesh: null,
-  finished: false
+// ==================== 刀光效果 ====================
+class SlashEffect {
+    constructor() {
+        this.slashes = [];
+    }
+    
+    add(x, y, angle, width, color, duration, type = 'normal') {
+        const points = [];
+        const segments = type === 'ult' ? 20 : 12;
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            const wave = Math.sin(t * Math.PI * (type === 'ult' ? 5 : 3)) * width * 0.15;
+            points.push({ x: (t - 0.5) * width, y: wave });
+        }
+        
+        this.slashes.push({
+            x, y, angle, width, color, type,
+            life: duration,
+            maxLife: duration,
+            points,
+            scale: 1
+        });
+    }
+    
+    addUltimateSlash(x, y, facing) {
+        // 全屏斩击
+        for (let i = 0; i < 8; i++) {
+            const angle = (Math.PI / 4) * i;
+            this.add(x, y, angle, 400, '#ff00ff', 30, 'ult');
+        }
+    }
+    
+    update() {
+        for (let i = this.slashes.length - 1; i >= 0; i--) {
+            const s = this.slashes[i];
+            s.life--;
+            s.scale = 1 + (1 - s.life / s.maxLife) * 0.5;
+            if (s.life <= 0) this.slashes.splice(i, 1);
+        }
+    }
+    
+    draw(ctx) {
+        for (const s of this.slashes) {
+            const alpha = s.life / s.maxLife;
+            ctx.save();
+            ctx.translate(s.x, s.y);
+            ctx.rotate(s.angle);
+            ctx.scale(s.scale, s.scale);
+            
+            const gradient = ctx.createLinearGradient(-s.width/2, 0, s.width/2, 0);
+            gradient.addColorStop(0, `rgba(255,255,255,${alpha * 0.1})`);
+            gradient.addColorStop(0.5, s.color.replace(')', `, ${alpha})`).replace('rgb', 'rgba'));
+            gradient.addColorStop(1, `rgba(255,255,255,${alpha * 0.1})`);
+            
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = s.type === 'ult' ? 8 : 4;
+            ctx.lineCap = 'round';
+            ctx.shadowBlur = s.type === 'ult' ? 40 : 20;
+            ctx.shadowColor = s.color;
+            
+            ctx.beginPath();
+            for (let i = 0; i < s.points.length; i++) {
+                const p = s.points[i];
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+            
+            // 内核白光
+            ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.8})`;
+            ctx.lineWidth = s.type === 'ult' ? 3 : 1.5;
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+        ctx.shadowBlur = 0;
+    }
+}
+
+// ==================== 武器配置 ====================
+const WEAPONS = {
+    DUAL_BLADE: {
+        name: '双刀',
+        icon: '⚔️',
+        damage: 18,
+        attackSpeed: 0.10,
+        range: 90,
+        hitCount: 3,
+        color: '#00ff88',
+        glowColor: 'rgba(0,255,136,0.5)',
+        knockback: 4,
+        airCombo: true,
+        description: '极速连击'
+    },
+    DUAL_DAGGER: {
+        name: '双匕',
+        icon: '🗡️',
+        damage: 28,
+        attackSpeed: 0.15,
+        range: 65,
+        hitCount: 4,
+        color: '#ff4444',
+        glowColor: 'rgba(255,68,68,0.5)',
+        knockback: 1.5,
+        backstabBonus: 3,
+        airCombo: false,
+        description: '背刺暴击'
+    },
+    DUAL_HOOK: {
+        name: '双钩',
+        icon: '🪝',
+        damage: 22,
+        attackSpeed: 0.20,
+        range: 130,
+        hitCount: 2,
+        color: '#ffaa00',
+        glowColor: 'rgba(255,170,0,0.5)',
+        knockback: 10,
+        pullEnemy: true,
+        airCombo: true,
+        description: '拉拽控制'
+    }
 };
-let npcs = [];
-let currentTrack;
-let effects = []; // 粒子效果
 
-// ============== 游戏流程 ==============
-function startGame(trackId) {
-  currentTrackId = trackId;
-  currentTrack = buildTrack(trackId);
-
-  const start = currentTrack.path[0];
-  const next = currentTrack.path[1];
-  player.x = start.x;
-  player.z = start.y;
-  player.angle = Math.atan2(next.x - start.x, -(next.y - start.y));
-  player.speed = player.minSpeed;
-  player.nitro = 100;
-  player.lap = 1;
-  player.checkpoint = 0;
-  player.kills = 0;
-  player.finished = false;
-  player.isDrifting = false;
-  player.driftAngle = 0;
-  player.driftTime = 0;
-
-  if (player.mesh) scene.remove(player.mesh);
-  player.mesh = createCar({ color: 0x00cc77 }, true);
-  player.mesh.position.set(player.x, 0, player.z);
-  player.mesh.rotation.y = player.angle;
-  scene.add(player.mesh);
-
-  // 创建NPC
-  npcs = [];
-  for (let i = 0; i < 4; i++) {
-    const idx = Math.floor((i + 1) * currentTrack.path.length / 5);
-    const pt = currentTrack.path[idx];
-    const npcMesh = createCar(NPC_TYPES[i]);
-    npcMesh.position.set(pt.x + (rnd() - 0.5) * 5, 0, pt.y + (rnd() - 0.5) * 5);
-    npcMesh.rotation.y = player.angle;
-    scene.add(npcMesh);
-    npcs.push({
-      x: pt.x, z: pt.y,
-      angle: player.angle,
-      speed: NPC_TYPES[i].speed,
-      health: 100,
-      alive: true,
-      mesh: npcMesh,
-      pathIdx: idx,
-      kills: 0
-    });
-  }
-
-  effects = [];
-  startTime = Date.now();
-  raceTime = 0;
-
-  document.getElementById('menuScreen').classList.add('hidden');
-  document.getElementById('resultScreen').classList.add('hidden');
-  document.getElementById('hud').style.display = 'flex';
-  document.querySelector('.nitro-bar').style.display = 'block';
-  document.getElementById('startHint').style.display = 'block';
-  gameState = 'playing';
-}
-
-function showMenu() {
-  document.getElementById('menuScreen').classList.remove('hidden');
-  document.getElementById('resultScreen').classList.add('hidden');
-  document.getElementById('hud').style.display = 'none';
-  document.querySelector('.nitro-bar').style.display = 'none';
-  document.getElementById('startHint').style.display = 'none';
-  gameState = 'menu';
-}
-
-function showResult() {
-  const rank = player.lap > 3 ? (raceTime < 30 ? 'S' : raceTime < 50 ? 'A' : raceTime < 70 ? 'B' : raceTime < 90 ? 'C' : 'D') : 'D';
-  const rankEl = document.getElementById('resultRank');
-  rankEl.textContent = rank; rankEl.className = `result-rank rank-${rank}`;
-  document.getElementById('resultTime').textContent = fmtTime(raceTime);
-  document.getElementById('resultKills').textContent = `撞毁 ${player.kills} 辆车`;
-  document.getElementById('resultScreen').classList.remove('hidden');
-  document.getElementById('hud').style.display = 'none';
-  document.querySelector('.nitro-bar').style.display = 'none';
-  gameState = 'result';
-}
-
-function resetCar() {
-  if (!currentTrack) return;
-  const start = currentTrack.path[0];
-  const next = currentTrack.path[1];
-  player.x = start.x;
-  player.z = start.y;
-  player.angle = Math.atan2(next.x - start.x, -(next.y - start.y));
-  player.speed = player.minSpeed;
-  player.isDrifting = false;
-  player.driftAngle = 0;
-  player.driftTime = 0;
-}
-
-// ============== 碰撞检测 ==============
-function checkWallCollision(x, z) {
-  const roadW = currentTrack.roadW / 2 - 2;
-  let minDist = Infinity;
-  let nearestPt = null;
-  let nearestIdx = 0;
-
-  for (let i = 0; i < currentTrack.path.length; i++) {
-    const p = currentTrack.path[i];
-    const d = dist(x, z, p.x, p.y);
-    if (d < minDist) { minDist = d; nearestPt = p; nearestIdx = i; }
-  }
-
-  if (minDist > roadW) {
-    // 推回赛道
-    const prev = currentTrack.path[(nearestIdx - 1 + currentTrack.path.length) % currentTrack.path.length];
-    const next = currentTrack.path[(nearestIdx + 1) % currentTrack.path.length];
-    const dx = next.x - prev.x, dz = next.y - prev.y;
-    const len = hypot(dx, dz) || 1;
-    const nx = -dz / len, nz = dx / len;
-    const perpDist = (x - nearestPt.x) * nx + (z - nearestPt.y) * nz;
-    const sign = perpDist > 0 ? 1 : -1;
-    const pushX = nearestPt.x + nx * (roadW - 2) * sign;
-    const pushZ = nearestPt.y + nz * (roadW - 2) * sign;
-    player.speed *= 0.5;
-    return { x: pushX, z: pushZ, hit: true };
-  }
-  return { x, z, hit: false };
-}
-
-function checkNPCCollision() {
-  for (const npc of npcs) {
-    if (!npc.alive) continue;
-    const d = dist(player.x, player.z, npc.x, npc.z);
-    if (d < 5) {
-      const ang = Math.atan2(npc.z - player.z, npc.x - player.x);
-      player.x -= Math.cos(ang) * 0.5;
-      player.z -= Math.sin(ang) * 0.5;
-      npc.x += Math.cos(ang) * 0.3;
-      npc.z += Math.sin(ang) * 0.3;
-      player.speed *= 0.6;
-      npc.speed *= 0.4;
-      npc.health -= 35;
-      if (npc.health <= 0) {
-        npc.alive = false;
-        scene.remove(npc.mesh);
-        player.kills++;
-        // 爆炸效果
-        createExplosion(npc.x, npc.z);
-      }
+// ==================== 绘制工具 ====================
+const DrawUtils = {
+    // 绘制带阴影的形状
+    drawShadowed(ctx, drawFn, color, glowSize = 10) {
+        ctx.save();
+        ctx.shadowBlur = glowSize;
+        ctx.shadowColor = color;
+        drawFn();
+        ctx.restore();
+    },
+    
+    // 绘制渐变矩形
+    drawGradientRect(ctx, x, y, w, h, color1, color2) {
+        const grad = ctx.createLinearGradient(x, y, x, y + h);
+        grad.addColorStop(0, color1);
+        grad.addColorStop(1, color2);
+        ctx.fillStyle = grad;
+        ctx.fillRect(x, y, w, h);
+    },
+    
+    // 绘制武器 - 双刀
+    drawDualBlade(ctx, facing, animProgress) {
+        const swing = Math.sin(animProgress * Math.PI) * 0.8;
+        const baseAngle = facing > 0 ? 0 : Math.PI;
+        
+        // 左刀
+        ctx.save();
+        ctx.rotate(baseAngle + swing - 0.3);
+        DrawUtils.drawShadowed(ctx, () => {
+            // 刀柄
+            ctx.fillStyle = '#444';
+            ctx.fillRect(-25, -4, 20, 8);
+            // 刀刃
+            const grad = ctx.createLinearGradient(0, -6, 0, 6);
+            grad.addColorStop(0, '#e0e0e0');
+            grad.addColorStop(0.5, '#fff');
+            grad.addColorStop(1, '#a0a0a0');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(-5, -5);
+            ctx.lineTo(45, 0);
+            ctx.lineTo(-5, 5);
+            ctx.closePath();
+            ctx.fill();
+            // 刀光
+            ctx.strokeStyle = 'rgba(0,255,136,0.6)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }, '#00ff88', 15);
+        ctx.restore();
+        
+        // 右刀
+        ctx.save();
+        ctx.rotate(baseAngle - swing + 0.3);
+        DrawUtils.drawShadowed(ctx, () => {
+            ctx.fillStyle = '#444';
+            ctx.fillRect(-25, -4, 20, 8);
+            const grad = ctx.createLinearGradient(0, -6, 0, 6);
+            grad.addColorStop(0, '#e0e0e0');
+            grad.addColorStop(0.5, '#fff');
+            grad.addColorStop(1, '#a0a0a0');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(-5, -5);
+            ctx.lineTo(45, 0);
+            ctx.lineTo(-5, 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,255,136,0.6)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }, '#00ff88', 15);
+        ctx.restore();
+    },
+    
+    // 绘制武器 - 双匕
+    drawDualDagger(ctx, facing, isBackstab) {
+        const baseAngle = facing > 0 ? 0.2 : Math.PI - 0.2;
+        const color = isBackstab ? '#ff0000' : '#ff4444';
+        
+        // 左匕
+        ctx.save();
+        ctx.rotate(baseAngle - 0.4);
+        DrawUtils.drawShadowed(ctx, () => {
+            // 柄
+            ctx.fillStyle = '#333';
+            ctx.fillRect(-15, -3, 12, 6);
+            // 刃
+            ctx.fillStyle = '#ccc';
+            ctx.beginPath();
+            ctx.moveTo(-3, -4);
+            ctx.lineTo(25, 0);
+            ctx.lineTo(-3, 4);
+            ctx.closePath();
+            ctx.fill();
+            // 血槽
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(5, 0);
+            ctx.lineTo(20, 0);
+            ctx.stroke();
+        }, color, isBackstab ? 25 : 12);
+        ctx.restore();
+        
+        // 右匕
+        ctx.save();
+        ctx.rotate(baseAngle + 0.4);
+        DrawUtils.drawShadowed(ctx, () => {
+            ctx.fillStyle = '#333';
+            ctx.fillRect(-15, -3, 12, 6);
+            ctx.fillStyle = '#ccc';
+            ctx.beginPath();
+            ctx.moveTo(-3, -4);
+            ctx.lineTo(25, 0);
+            ctx.lineTo(-3, 4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(5, 0);
+            ctx.lineTo(20, 0);
+            ctx.stroke();
+        }, color, isBackstab ? 25 : 12);
+        ctx.restore();
+    },
+    
+    // 绘制武器 - 双钩
+    drawDualHook(ctx, facing, animProgress) {
+        const baseAngle = facing > 0 ? 0 : Math.PI;
+        const extend = Math.sin(animProgress * Math.PI) * 20;
+        
+        // 左钩
+        ctx.save();
+        ctx.rotate(baseAngle - 0.5);
+        ctx.translate(extend, 0);
+        DrawUtils.drawShadowed(ctx, () => {
+            // 链
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-20, 0);
+            for (let i = 0; i < 5; i++) {
+                ctx.lineTo(-10 + i*8, (i%2===0?-3:3));
+            }
+            ctx.stroke();
+            // 钩
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(35, 0, 15, 0.5, -2.5, true);
+            ctx.stroke();
+            // 钩尖
+            ctx.fillStyle = '#ffaa00';
+            ctx.beginPath();
+            ctx.moveTo(47, -10);
+            ctx.lineTo(52, -15);
+            ctx.lineTo(45, -8);
+            ctx.fill();
+        }, '#ffaa00', 18);
+        ctx.restore();
+        
+        // 右钩
+        ctx.save();
+        ctx.rotate(baseAngle + 0.5);
+        ctx.translate(extend, 0);
+        DrawUtils.drawShadowed(ctx, () => {
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-20, 0);
+            for (let i = 0; i < 5; i++) {
+                ctx.lineTo(-10 + i*8, (i%2===0?3:-3));
+            }
+            ctx.stroke();
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(35, 0, 15, -0.5, 2.5);
+            ctx.stroke();
+            ctx.fillStyle = '#ffaa00';
+            ctx.beginPath();
+            ctx.moveTo(47, 10);
+            ctx.lineTo(52, 15);
+            ctx.lineTo(45, 8);
+            ctx.fill();
+        }, '#ffaa00', 18);
+        ctx.restore();
     }
-  }
-}
+};
 
-function createExplosion(x, z) {
-  for (let i = 0; i < 20; i++) {
-    const geo = new THREE.BoxGeometry(1, 1, 1);
-    const mat = new THREE.MeshBasicMaterial({ color: Math.random() > 0.5 ? 0xff6600 : 0xffff00 });
-    const particle = new THREE.Mesh(geo, mat);
-    particle.position.set(x + (rnd() - 0.5) * 5, 2, z + (rnd() - 0.5) * 5);
-    particle.userData.vx = (rnd() - 0.5) * 0.5;
-    particle.userData.vy = rnd() * 0.3;
-    particle.userData.vz = (rnd() - 0.5) * 0.5;
-    particle.userData.life = 40;
-    effects.push(particle);
-    scene.add(particle);
-  }
-}
-
-// ============== 更新 ==============
-function updatePlayer() {
-  if (player.finished) return;
-
-  // 转向
-  if (keys.left) player.angle -= player.turnSpeed * (player.speed > 0 ? 1.2 : 0.5);
-  if (keys.right) player.angle += player.turnSpeed * (player.speed > 0 ? 1.2 : 0.5);
-
-  // 漂移
-  player.isDrifting = keys.drift && player.speed > 0.15;
-  if (player.isDrifting) {
-    player.driftTime++;
-    player.driftAngle = Math.sin(player.driftTime * 0.15) * 0.3;
-    player.speed *= 0.97;
-    player.nitro = Math.min(100, player.nitro + 0.3);
-  } else {
-    player.driftAngle *= 0.85;
-    if (player.driftTime > 0) {
-      player.nitro = Math.min(100, player.nitro + Math.min(30, player.driftTime * 0.4));
-      player.driftTime = 0;
+// ==================== 玩家类 ====================
+class Player {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+        this.width = 35;
+        this.height = 65;
+        this.facing = 1;
+        
+        this.state = 'idle';
+        this.stateTimer = 0;
+        this.onGround = false;
+        
+        this.currentWeapon = 'DUAL_BLADE';
+        this.attackTimer = 0;
+        this.attackCombo = 0;
+        this.maxCombo = 6;
+        this.canCancel = false;
+        
+        this.combo = 0;
+        this.comboTimer = 0;
+        this.comboDecayTime = 200;
+        
+        this.maxHealth = 100;
+        this.health = 100;
+        this.moveSpeed = 7;
+        this.jumpPower = -16;
+        this.dodgeSpeed = 18;
+        
+        this.dodgeCooldown = 0;
+        this.isInvincible = false;
+        this.invincibleTimer = 0;
+        
+        this.animFrame = 0;
+        this.airJumps = 0;
+        this.maxAirJumps = 2;
+        
+        // 动画
+        this.animations = {
+            idle: { frame: 0, speed: 0.1 },
+            run: { frame: 0, speed: 0.25 },
+            attack: { frame: 0, speed: 0.4 }
+        };
     }
-  }
-
-  // 速度
-  if (!player.isDrifting) {
-    player.speed += (player.minSpeed - player.speed) * 0.03;
-  }
-  if (keys.nitro && player.nitro > 0) {
-    player.speed += 0.08;
-    player.speed = Math.min(player.speed, player.maxSpeed + 0.5);
-    player.nitro -= 2;
-  }
-
-  // 移动
-  const moveAngle = player.angle + player.driftAngle;
-  const nx = player.x + Math.sin(moveAngle) * player.speed;
-  const nz = player.z - Math.cos(moveAngle) * player.speed;
-
-  // 碰撞
-  const col = checkWallCollision(nx, nz);
-  player.x = col.x;
-  player.z = col.z;
-
-  // 检查点
-  let minDist = Infinity, nearestIdx = 0;
-  for (let i = 0; i < currentTrack.path.length; i++) {
-    const d = dist(player.x, player.z, currentTrack.path[i].x, currentTrack.path[i].y);
-    if (d < minDist) { minDist = d; nearestIdx = i; }
-  }
-  const segs = 8;
-  const seg = Math.floor(nearestIdx / (currentTrack.path.length / segs));
-  if (seg !== player.checkpoint && (seg - player.checkpoint > 0 && seg - player.checkpoint < segs / 2 || seg < 1 && player.checkpoint >= segs - 1)) {
-    player.checkpoint = seg;
-    if (seg < 1 && player.checkpoint >= segs - 1) {
-      player.lap++;
-      if (player.lap > 3) { player.finished = true; }
+    
+    update(input, game) {
+        this.stateTimer++;
+        this.animFrame++;
+        if (this.attackTimer > 0) this.attackTimer--;
+        if (this.dodgeCooldown > 0) this.dodgeCooldown--;
+        if (this.invincibleTimer > 0) {
+            this.invincibleTimer--;
+            if (this.invincibleTimer <= 0) this.isInvincible = false;
+        }
+        
+        if (this.combo > 0) {
+            this.comboTimer++;
+            if (this.comboTimer > this.comboDecayTime) {
+                this.combo = Math.max(0, this.combo - 1);
+                this.comboTimer = 0;
+            }
+        }
+        
+        this.vy += 0.7;
+        
+        switch(this.state) {
+            case 'idle':
+            case 'run':
+                this.handleGroundMovement(input, game);
+                break;
+            case 'attack':
+                this.handleAttack(input, game);
+                break;
+            case 'jump':
+            case 'air_attack':
+                this.handleAirState(input, game);
+                break;
+            case 'dodge':
+                this.handleDodge();
+                break;
+        }
+        
+        this.x += this.vx;
+        this.y += this.vy;
+        
+        const groundY = game.groundY;
+        if (this.y + this.height > groundY) {
+            this.y = groundY - this.height;
+            this.vy = 0;
+            this.onGround = true;
+            this.airJumps = 0;
+            if (this.state === 'jump' || this.state === 'air_attack') {
+                this.state = 'idle';
+            }
+        } else {
+            this.onGround = false;
+        }
+        
+        this.x = Math.max(40, Math.min(game.width - 40, this.x));
+        
+        if (this.state !== 'dodge' && this.state !== 'attack') {
+            this.vx *= 0.88;
+        }
     }
-  }
-
-  // 更新mesh
-  player.mesh.position.set(player.x, 0, player.z);
-  player.mesh.rotation.y = player.angle + player.driftAngle;
-
-  // 喷焰
-  const flame = player.mesh.children.find(c => c.userData.isFlame);
-  if (flame) {
-    flame.material.opacity = keys.nitro && player.nitro > 0 ? 0.8 : 0;
-    if (keys.nitro && player.nitro > 0) {
-      flame.scale.y = 1 + Math.random() * 0.5;
+    
+    handleGroundMovement(input, game) {
+        if (input.isDown('KeyA') || input.isDown('ArrowLeft')) {
+            this.vx = -this.moveSpeed;
+            this.facing = -1;
+            this.state = 'run';
+        } else if (input.isDown('KeyD') || input.isDown('ArrowRight')) {
+            this.vx = this.moveSpeed;
+            this.facing = 1;
+            this.state = 'run';
+        } else {
+            this.state = 'idle';
+        }
+        
+        if (input.isPressed('KeyK')) this.jump();
+        if (input.isPressed('KeyJ')) this.startAttack(game);
+        if ((input.isPressed('KeyL') || input.isPressed('ShiftLeft')) && this.dodgeCooldown <= 0) {
+            this.startDodge();
+        }
+        if (input.isPressed('KeyQ')) this.switchWeapon('DUAL_BLADE', game);
+        if (input.isPressed('KeyW')) this.switchWeapon('DUAL_DAGGER', game);
+        if (input.isPressed('KeyE')) this.switchWeapon('DUAL_HOOK', game);
+        if (input.isPressed('KeyU')) this.tryFinisher(false, game);
+        if (input.isPressed('KeyI')) this.tryFinisher(true, game);
     }
-  }
-}
-
-function updateNPCs() {
-  for (const npc of npcs) {
-    if (!npc.alive) continue;
-
-    // 跟随路径
-    const target = currentTrack.path[(npc.pathIdx + 5) % currentTrack.path.length];
-    const ta = Math.atan2(target.x - npc.x, -(target.y - npc.z));
-    let diff = ta - npc.angle;
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    while (diff < -Math.PI) diff += Math.PI * 2;
-    npc.angle += Math.sign(diff) * Math.min(Math.abs(diff), 0.05);
-    npc.speed = lerp(npc.speed, NPC_TYPES[npcs.indexOf(npc)]?.speed || 0.3, 0.05);
-
-    const nx = npc.x + Math.sin(npc.angle) * npc.speed;
-    const nz = npc.z - Math.cos(npc.angle) * npc.speed;
-
-    // 简单边界检测
-    let minDist = Infinity;
-    for (const p of currentTrack.path) {
-      const d = dist(nx, nz, p.x, p.y);
-      if (d < minDist) minDist = d;
+    
+    handleAttack(input, game) {
+        this.vx *= 0.92;
+        this.canCancel = this.stateTimer > 4;
+        
+        if (this.stateTimer === 2) {
+            this.performAttackHit(game);
+        }
+        
+        if (this.stateTimer > 6 && this.stateTimer < 18) {
+            if (input.isPressed('KeyJ') && this.attackCombo < this.maxCombo) {
+                this.attackCombo++;
+                this.stateTimer = 0;
+                this.canCancel = false;
+            }
+        }
+        
+        if ((input.isPressed('KeyL') || input.isPressed('ShiftLeft')) && this.canCancel && this.dodgeCooldown <= 0) {
+            this.startDodge();
+            return;
+        }
+        if (input.isPressed('KeyK') && this.canCancel) {
+            this.jump();
+            return;
+        }
+        
+        if (this.stateTimer > 22) {
+            this.state = 'idle';
+            this.attackCombo = 0;
+        }
     }
-    if (minDist < currentTrack.roadW / 2) {
-      npc.x = nx;
-      npc.z = nz;
+    
+    handleAirState(input, game) {
+        if (input.isDown('KeyA') || input.isDown('ArrowLeft')) {
+            this.vx = -this.moveSpeed * 0.85;
+            this.facing = -1;
+        } else if (input.isDown('KeyD') || input.isDown('ArrowRight')) {
+            this.vx = this.moveSpeed * 0.85;
+            this.facing = 1;
+        }
+        
+        if (input.isPressed('KeyJ')) this.startAirAttack(game);
+        if ((input.isPressed('KeyL') || input.isPressed('ShiftLeft')) && this.dodgeCooldown <= 0) {
+            this.startDodge();
+        }
     }
-
-    npc.mesh.position.set(npc.x, 0, npc.z);
-    npc.mesh.rotation.y = npc.angle;
-
-    // 更新路径索引
-    let minD = Infinity, nearestIdx = 0;
-    for (let i = 0; i < currentTrack.path.length; i++) {
-      const d = dist(npc.x, npc.z, currentTrack.path[i].x, currentTrack.path[i].y);
-      if (d < minD) { minD = d; nearestIdx = i; }
+    
+    handleDodge() {
+        this.isInvincible = true;
+        this.invincibleTimer = 12;
+        this.vx = this.facing * this.dodgeSpeed;
+        
+        if (this.stateTimer > 10) {
+            this.state = this.onGround ? 'idle' : 'jump';
+            this.vx *= 0.25;
+        }
     }
-    npc.pathIdx = nearestIdx;
-  }
+    
+    jump() {
+        if (this.onGround) {
+            this.vy = this.jumpPower;
+            this.state = 'jump';
+            this.onGround = false;
+        } else if (this.airJumps < this.maxAirJumps) {
+            this.vy = this.jumpPower * 0.85;
+            this.airJumps++;
+            game.particles.emit(this.x, this.y + this.height, '#00ff88', 8, 4, 15);
+        }
+    }
+    
+    startAttack(game) {
+        this.state = 'attack';
+        this.stateTimer = 0;
+    }
+    
+    startAirAttack(game) {
+        const weapon = WEAPONS[this.currentWeapon];
+        if (!weapon.airCombo) return;
+        
+        this.state = 'air_attack';
+        this.stateTimer = 0;
+        this.performAttackHit(game);
+        this.vy = Math.max(this.vy, -3);
+        
+        // 空中悬停效果
+        this.vy *= 0.6;
+    }
+    
+    performAttackHit(game) {
+        const weapon = WEAPONS[this.currentWeapon];
+        const hitX = this.x + this.facing * weapon.range * 0.6;
+        const hitY = this.y + this.height * 0.4;
+        
+        let hitCount = 0;
+        let backstabCount = 0;
+        
+        for (const enemy of game.enemies) {
+            const distX = Math.abs(enemy.x - hitX);
+            const distY = Math.abs(enemy.y - hitY);
+            
+            if (distX < weapon.range && distY < 70) {
+                let damage = weapon.damage;
+                let isBackstab = false;
+                
+                if (this.currentWeapon === 'DUAL_DAGGER') {
+                    const enemyFacingRight = enemy.vx > 0 || enemy.facing > 0;
+                    const attackFromBehind = (this.facing === 1 && !enemyFacingRight) || 
+                                            (this.facing === -1 && enemyFacingRight);
+                    if (attackFromBehind) {
+                        damage *= weapon.backstabBonus;
+                        isBackstab = true;
+                        backstabCount++;
+                    }
+                }
+                
+                // 连击加成
+                damage *= (1 + this.attackCombo * 0.15);
+                
+                const killed = enemy.takeDamage(damage, this.facing * weapon.knockback);
+                
+                if (killed) {
+                    this.addCombo(5);
+                    game.particles.emit(enemy.x, enemy.y - 30, '#ff0000', 15, 8, 25);
+                } else {
+                    this.addCombo(1);
+                    hitCount++;
+                    
+                    // 击飞效果
+                    if (this.currentWeapon === 'DUAL_BLADE' || enemy.launched) {
+                        enemy.vy = -6;
+                        enemy.launched = true;
+                    }
+                    
+                    if (weapon.pullEnemy) {
+                        enemy.x -= this.facing * 40;
+                        enemy.hitStun = 25;
+                    }
+                }
+                
+                // 刀光特效
+                const slashColor = isBackstab ? '#ff0066' : weapon.color;
+                const slashWidth = isBackstab ? 120 : 90;
+                game.slash.add(enemy.x, enemy.y - 25, this.facing > 0 ? 0 : Math.PI, slashWidth, slashColor, 10);
+                
+                // 粒子效果
+                game.particles.emit(enemy.x, enemy.y - 30, slashColor, isBackstab ? 12 : 8, 6, 20, 'spark');
+                
+                game.spawnDamageNumber(enemy.x, enemy.y - 60, Math.floor(damage), isBackstab);
+            }
+        }
+        
+        if (hitCount > 0 || backstabCount > 0) {
+            game.audio.playHitSound(this.combo);
+        }
+    }
+    
+    startDodge() {
+        this.state = 'dodge';
+        this.stateTimer = 0;
+        this.dodgeCooldown = 25;
+        this.canCancel = false;
+        game.audio.playDodgeSound();
+        game.particles.emit(this.x, this.y + 30, '#00ffff', 6, 5, 12);
+    }
+    
+    switchWeapon(type, game) {
+        if (this.currentWeapon === type) return;
+        this.currentWeapon = type;
+        game.audio.playWeaponSwitch();
+        game.updateWeaponUI();
+        game.particles.emit(this.x, this.y - 20, WEAPONS[type].color, 10, 4, 15);
+    }
+    
+    tryFinisher(isBig, game) {
+        const required = isBig ? 100 : 30;
+        if (this.combo >= required) {
+            this.executeFinisher(isBig, game);
+        }
+    }
+    
+    executeFinisher(isBig, game) {
+        if (isBig) {
+            game.screenShake = 40;
+            game.showFinisherText("∞ ULTIMATE FINISHER ∞");
+            game.slash.addUltimateSlash(this.x, this.y - 30, this.facing);
+            game.particles.emit(this.x, this.y - 40, '#ff00ff', 60, 12, 80);
+            
+            for (const enemy of game.enemies) {
+                const damage = 800;
+                enemy.takeDamage(damage, 0);
+                enemy.vy = -25;
+                enemy.vx = (enemy.x - this.x) * 0.1;
+                game.spawnDamageNumber(enemy.x, enemy.y - 60, damage, true);
+            }
+        } else {
+            game.screenShake = 20;
+            game.showFinisherText("⚔ COMBO FINISHER ⚔");
+            
+            const weapon = WEAPONS[this.currentWeapon];
+            game.slash.add(this.x, this.y - 30, this.facing > 0 ? 0.3 : Math.PI - 0.3, 250, weapon.color, 20, 'ult');
+            game.particles.emit(this.x, this.y - 40, weapon.color, 35, 10, 50);
+            
+            for (const enemy of game.enemies) {
+                const dist = Math.abs(enemy.x - this.x);
+                if (dist < 250) {
+                    const damage = 150;
+                    enemy.takeDamage(damage, this.facing * 15);
+                    game.spawnDamageNumber(enemy.x, enemy.y - 60, damage, true);
+                }
+            }
+        }
+        
+        game.audio.playFinisherSound(isBig);
+        this.combo = 0;
+    }
+    
+    addCombo(amount) {
+        this.combo += amount;
+        this.comboTimer = 0;
+    }
+    
+    takeDamage(damage) {
+        if (this.isInvincible) return;
+        
+        this.health -= damage;
+        this.isInvincible = true;
+        this.invincibleTimer = 50;
+        
+        if (this.health <= 0) this.health = 0;
+    }
+    
+    draw(ctx) {
+        ctx.save();
+        
+        if (this.isInvincible && Math.floor(this.animFrame / 3) % 2 === 0) {
+            ctx.globalAlpha = 0.4;
+        }
+        
+        ctx.translate(this.x, this.y + this.height);
+        
+        // 闪避拖尾
+        if (this.state === 'dodge') {
+            ctx.globalAlpha = 0.3;
+            ctx.translate(-this.vx * 3, 0);
+            this.drawBody(ctx, true);
+            ctx.translate(this.vx * 3, 0);
+            ctx.globalAlpha = this.isInvincible ? 0.4 : 1;
+        }
+        
+        this.drawBody(ctx, false);
+        
+        ctx.restore();
+    }
+    
+    drawBody(ctx, isGhost) {
+        const weapon = WEAPONS[this.currentWeapon];
+        const isAttacking = this.state === 'attack' || this.state === 'air_attack';
+        const animProgress = isAttacking ? this.stateTimer / 22 : 0;
+        
+        // 身体摆动
+        const bobOffset = this.state === 'run' ? Math.sin(this.animFrame * 0.3) * 3 : 
+                         this.state === 'idle' ? Math.sin(this.animFrame * 0.1) * 1 : 0;
+        
+        // 腿部动画
+        if (this.state === 'run') {
+            const legSwing = Math.sin(this.animFrame * 0.4);
+            ctx.strokeStyle = '#1a1a2e';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            
+            // 左腿
+            ctx.beginPath();
+            ctx.moveTo(-8, -15);
+            ctx.lineTo(-12 + legSwing * 8, 0);
+            ctx.stroke();
+            
+            // 右腿
+            ctx.beginPath();
+            ctx.moveTo(8, -15);
+            ctx.lineTo(12 - legSwing * 8, 0);
+            ctx.stroke();
+        } else {
+            // 站立腿部
+            ctx.strokeStyle = '#1a1a2e';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-8, -15);
+            ctx.lineTo(-10, 0);
+            ctx.moveTo(8, -15);
+            ctx.lineTo(10, 0);
+            ctx.stroke();
+        }
+        
+        // 身体
+        const bodyY = -35 + bobOffset;
+        DrawUtils.drawGradientRect(ctx, -14, bodyY, 28, 30, '#2d3436', '#1a1a2e');
+        
+        // 装甲细节
+        ctx.fillStyle = weapon.color;
+        ctx.globalAlpha = 0.3;
+        ctx.fillRect(-10, bodyY + 5, 20, 3);
+        ctx.globalAlpha = isGhost ? 0.4 : 1;
+        
+        // 头部
+        const headY = -58 + bobOffset;
+        ctx.fillStyle = '#ffeaa7';
+        ctx.beginPath();
+        ctx.arc(0, headY, 11, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 头发
+        ctx.fillStyle = '#2d3436';
+        ctx.beginPath();
+        ctx.arc(0, headY - 2, 12, Math.PI, 0);
+        ctx.fill();
+        
+        // 眼睛
+        ctx.fillStyle = '#000';
+        const eyeX = this.facing > 0 ? 4 : -4;
+        ctx.beginPath();
+        ctx.arc(eyeX, headY + 1, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 围巾/披风
+        if (this.state === 'dodge' || this.state === 'jump') {
+            ctx.strokeStyle = weapon.color;
+            ctx.lineWidth = 4;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(0, bodyY + 5);
+            ctx.quadraticCurveTo(-this.facing * 20, bodyY + 10, -this.facing * 30, bodyY + 25);
+            ctx.stroke();
+            ctx.globalAlpha = isGhost ? 0.4 : 1;
+        }
+        
+        // 武器
+        ctx.translate(0, bodyY + 15);
+        
+        if (this.currentWeapon === 'DUAL_BLADE') {
+            DrawUtils.drawDualBlade(ctx, this.facing, isAttacking ? animProgress : 0);
+        } else if (this.currentWeapon === 'DUAL_DAGGER') {
+            const isBackstab = this.combo > 50;
+            DrawUtils.drawDualDagger(ctx, this.facing, isBackstab);
+        } else {
+            DrawUtils.drawDualHook(ctx, this.facing, isAttacking ? animProgress : 0);
+        }
+    }
 }
 
-function updateEffects() {
-  effects = effects.filter(e => {
-    e.position.x += e.userData.vx;
-    e.position.y += e.userData.vy;
-    e.position.z += e.userData.vz;
-    e.userData.vy -= 0.01;
-    e.userData.life--;
-    e.material.opacity = e.userData.life / 40;
-    if (e.userData.life <= 0) { scene.remove(e); return false; }
-    return true;
-  });
+// ==================== 敌人类 ====================
+class Enemy {
+    constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.width = 45;
+        this.height = 55;
+        this.type = type;
+        
+        this.maxHealth = type === 'elite' ? 250 : 100;
+        this.health = this.maxHealth;
+        this.damage = type === 'elite' ? 25 : 12;
+        
+        this.vx = 0;
+        this.vy = 0;
+        
+        this.state = 'idle';
+        this.stateTimer = 0;
+        this.hitStun = 0;
+        this.launched = false;
+        this.animFrame = 0;
+        
+        this.facing = -1;
+        this.moveSpeed = type === 'elite' ? 1.8 : 2.5;
+        
+        // 外观
+        this.colors = this.generateColors();
+    }
+    
+    generateColors() {
+        if (this.type === 'elite') {
+            return {
+                body: '#6c5ce7',
+                dark: '#4834d4',
+                accent: '#a29bfe'
+            };
+        }
+        return {
+            body: '#e74c3c',
+            dark: '#c0392b',
+            accent: '#ff7675'
+        };
+    }
+    
+    update(player, game) {
+        this.animFrame++;
+        
+        if (this.hitStun > 0) {
+            this.hitStun--;
+            this.vy += 0.7;
+            this.x += this.vx;
+            this.y += this.vy;
+            
+            if (this.y + this.height > game.groundY) {
+                this.y = game.groundY - this.height;
+                this.vy = -this.vy * 0.5;
+                this.launched = false;
+            }
+            return;
+        }
+        
+        const dist = player.x - this.x;
+        const absDist = Math.abs(dist);
+        
+        if (absDist > 500) {
+            this.state = 'idle';
+            this.vx *= 0.9;
+        } else if (absDist > 55) {
+            this.state = 'chase';
+            this.facing = dist > 0 ? 1 : -1;
+            this.vx = this.facing * this.moveSpeed;
+        } else {
+            this.state = 'attack';
+            this.vx *= 0.5;
+            
+            if (this.stateTimer % 50 === 0) {
+                player.takeDamage(this.damage);
+                game.particles.emit(player.x, player.y, '#ff0000', 6, 4, 12);
+            }
+        }
+        
+        this.vy += 0.7;
+        this.x += this.vx;
+        this.y += this.vy;
+        
+        if (this.y + this.height > game.groundY) {
+            this.y = game.groundY - this.height;
+            this.vy = 0;
+            this.launched = false;
+        }
+        
+        this.stateTimer++;
+    }
+    
+    takeDamage(damage, knockbackX) {
+        this.health -= damage;
+        this.hitStun = 12;
+        this.vx = knockbackX;
+        
+        if (this.health <= 0) return true;
+        return false;
+    }
+    
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y + this.height);
+        
+        const c = this.colors;
+        const bob = Math.sin(this.animFrame * 0.15) * 2;
+        
+        // 阴影
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(0, 5, 25, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 腿部
+        const legOffset = this.state === 'chase' ? Math.sin(this.animFrame * 0.3) * 6 : 0;
+        ctx.strokeStyle = c.dark;
+        ctx.lineWidth = 7;
+        ctx.lineCap = 'round';
+        
+        ctx.beginPath();
+        ctx.moveTo(-10, -20);
+        ctx.lineTo(-12 + legOffset, 0);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(10, -20);
+        ctx.lineTo(12 - legOffset, 0);
+        ctx.stroke();
+        
+        // 身体
+        const bodyY = -45 + bob;
+        DrawUtils.drawGradientRect(ctx, -18, bodyY, 36, 30, c.body, c.dark);
+        
+        // 装甲纹路
+        ctx.strokeStyle = c.accent;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.5;
+        ctx.strokeRect(-14, bodyY + 5, 28, 20);
+        ctx.globalAlpha = 1;
+        
+        // 头部
+        const headY = -65 + bob;
+        ctx.fillStyle = c.accent;
+        ctx.beginPath();
+        ctx.arc(0, headY, 12, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 角/装饰
+        if (this.type === 'elite') {
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            ctx.moveTo(-8, headY - 8);
+            ctx.lineTo(-12, headY - 20);
+            ctx.lineTo(-4, headY - 10);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(8, headY - 8);
+            ctx.lineTo(12, headY - 20);
+            ctx.lineTo(4, headY - 10);
+            ctx.fill();
+        }
+        
+        // 眼睛
+        ctx.fillStyle = '#fff';
+        const eyeX = this.facing > 0 ? 4 : -4;
+        ctx.beginPath();
+        ctx.arc(eyeX, headY + 2, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 瞳孔
+        ctx.fillStyle = this.type === 'elite' ? '#ffd700' : '#ff0000';
+        ctx.beginPath();
+        ctx.arc(eyeX + this.facing * 2, headY + 2, 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 血条背景
+        const barY = -85;
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(-25, barY, 50, 6);
+        
+        // 血条
+        const healthPct = this.health / this.maxHealth;
+        const barColor = healthPct > 0.6 ? '#00ff88' : healthPct > 0.3 ? '#ffaa00' : '#ff3333';
+        ctx.fillStyle = barColor;
+        ctx.fillRect(-25, barY, 50 * healthPct, 6);
+        
+        // 血条边框
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-25, barY, 50, 6);
+        
+        // 硬直指示
+        if (this.hitStun > 0) {
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('!', 0, bodyY - 10);
+        }
+        
+        ctx.restore();
+    }
 }
 
-function updateCamera() {
-  const camDist = 25;
-  const camHeight = 12;
-  const targetX = player.x - Math.sin(player.angle) * camDist;
-  const targetZ = player.z + Math.cos(player.angle) * camDist;
-  const targetY = camHeight;
-
-  camera.position.x = lerp(camera.position.x, targetX, 0.05);
-  camera.position.y = lerp(camera.position.y, targetY, 0.05);
-  camera.position.z = lerp(camera.position.z, targetZ, 0.05);
-  camera.lookAt(player.x, 2, player.z);
+// ==================== 主游戏类 ====================
+class Game {
+    constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.width = 1280;
+        this.height = 720;
+        this.groundY = this.height - 100;
+        
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+        
+        this.audio = new AudioSystem();
+        this.input = new InputHandler();
+        this.particles = new ParticleSystem();
+        this.slash = new SlashEffect();
+        
+        this.player = null;
+        this.enemies = [];
+        
+        this.gameState = 'menu';
+        this.screenShake = 0;
+        this.frameCount = 0;
+        this.bgOffset = 0;
+        
+        this.setupUI();
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+    }
+    
+    setupUI() {
+        document.getElementById('startBtn').addEventListener('click', () => {
+            this.startGame();
+        });
+        this.setupMobileControls();
+    }
+    
+    setupMobileControls() {
+        const addTouch = (id, code) => {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.input.keys[code] = true;
+                this.input.keysPressed[code] = true;
+            });
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.input.keys[code] = false;
+                this.input.keysReleased[code] = true;
+            });
+        };
+        
+        addTouch('btnLeft', 'ArrowLeft');
+        addTouch('btnRight', 'ArrowRight');
+        addTouch('btnAttack', 'KeyJ');
+        addTouch('btnJump', 'KeyK');
+        addTouch('btnDodge', 'KeyL');
+    }
+    
+    resize() {
+        const container = document.getElementById('gameContainer');
+        let w = window.innerWidth - 40;
+        let h = w * 9 / 16;
+        
+        if (h > window.innerHeight - 40) {
+            h = window.innerHeight - 40;
+            w = h * 16 / 9;
+        }
+        
+        container.style.width = w + 'px';
+        container.style.height = h + 'px';
+    }
+    
+    startGame() {
+        this.audio.init();
+        this.gameState = 'playing';
+        document.getElementById('menuScreen').style.display = 'none';
+        
+        this.player = new Player(300, this.groundY - 150);
+        this.enemies = [];
+        this.spawnWave();
+        this.gameLoop();
+    }
+    
+    spawnWave() {
+        const count = 2 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < count; i++) {
+            const x = 700 + Math.random() * 400;
+            const type = Math.random() > 0.85 ? 'elite' : 'normal';
+            this.enemies.push(new Enemy(x, this.groundY - 100, type));
+        }
+    }
+    
+    spawnDamageNumber(x, y, value, isCrit) {
+        // 转换为屏幕坐标
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = rect.width / this.width;
+        const scaleY = rect.height / this.height;
+        
+        const el = document.createElement('div');
+        el.className = 'damage-number';
+        el.textContent = value;
+        el.style.left = (x * scaleX) + 'px';
+        el.style.top = (y * scaleY) + 'px';
+        
+        if (isCrit) {
+            el.style.fontSize = '42px';
+            el.style.color = '#ff00ff';
+            el.textContent = value + '!';
+        }
+        
+        document.getElementById('ui').appendChild(el);
+        setTimeout(() => el.remove(), 1000);
+    }
+    
+    showFinisherText(text) {
+        const el = document.createElement('div');
+        el.className = 'finisher-text';
+        el.textContent = text;
+        document.getElementById('ui').appendChild(el);
+        setTimeout(() => el.remove(), 2500);
+    }
+    
+    updateWeaponUI() {
+        const weapons = ['DUAL_BLADE', 'DUAL_DAGGER', 'DUAL_HOOK'];
+        weapons.forEach((w, i) => {
+            const el = document.getElementById('weapon' + (i + 1));
+            if (this.player.currentWeapon === w) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        });
+    }
+    
+    update() {
+        if (this.gameState !== 'playing') return;
+        
+        this.frameCount++;
+        this.bgOffset += 0.5;
+        
+        if (this.screenShake > 0) this.screenShake *= 0.92;
+        if (this.screenShake < 0.5) this.screenShake = 0;
+        
+        this.player.update(this.input, this);
+        
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+            const enemy = this.enemies[i];
+            enemy.update(this.player, this);
+            
+            if (enemy.health <= 0) {
+                this.particles.emit(enemy.x, enemy.y, '#ff4444', 20, 7, 35);
+                this.enemies.splice(i, 1);
+            }
+        }
+        
+        if (this.enemies.length === 0 && this.frameCount % 120 === 0) {
+            this.spawnWave();
+        }
+        
+        this.particles.update();
+        this.slash.update();
+        this.updateUI();
+    }
+    
+    updateUI() {
+        const healthPct = (this.player.health / this.player.maxHealth) * 100;
+        document.getElementById('healthFill').style.width = healthPct + '%';
+        
+        const comboEl = document.getElementById('comboDisplay');
+        const comboNum = document.getElementById('comboNumber');
+        
+        if (this.player.combo > 0) {
+            comboEl.style.opacity = '1';
+            comboNum.textContent = this.player.combo;
+            
+            if (this.player.combo >= 100) {
+                comboNum.style.color = '#ff00ff';
+                comboNum.style.textShadow = '0 0 30px #ff00ff, 0 0 60px #ff00ff';
+                document.querySelector('.finisher-bar').classList.add('finisher-ready');
+            } else if (this.player.combo >= 30) {
+                comboNum.style.color = '#00ffff';
+                comboNum.style.textShadow = '0 0 20px #00ffff';
+                document.querySelector('.finisher-bar').classList.remove('finisher-ready');
+            } else {
+                comboNum.style.color = '#ffdd00';
+                comboNum.style.textShadow = '0 0 20px #ff6600';
+                document.querySelector('.finisher-bar').classList.remove('finisher-ready');
+            }
+        } else {
+            comboEl.style.opacity = '0';
+        }
+        
+        const finisherPct = Math.min((this.player.combo / 100) * 100, 100);
+        document.getElementById('finisherFill').style.width = finisherPct + '%';
+    }
+    
+    draw() {
+        this.ctx.fillStyle = '#0a0a12';
+        this.ctx.fillRect(0, 0, this.width, this.height);
+        
+        this.ctx.save();
+        if (this.screenShake > 0) {
+            this.ctx.translate(
+                (Math.random() - 0.5) * this.screenShake,
+                (Math.random() - 0.5) * this.screenShake
+            );
+        }
+        
+        this.drawBackground();
+        
+        // 地面
+        const groundGrad = this.ctx.createLinearGradient(0, this.groundY, 0, this.height);
+        groundGrad.addColorStop(0, '#2d3436');
+        groundGrad.addColorStop(1, '#1a1a2e');
+        this.ctx.fillStyle = groundGrad;
+        this.ctx.fillRect(0, this.groundY, this.width, this.height - this.groundY);
+        
+        // 地面发光边缘
+        this.ctx.shadowBlur = 20;
+        this.ctx.shadowColor = '#00ff88';
+        this.ctx.strokeStyle = '#00ff88';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, this.groundY);
+        this.ctx.lineTo(this.width, this.groundY);
+        this.ctx.stroke();
+        this.ctx.shadowBlur = 0;
+        
+        // 绘制敌人
+        for (const enemy of this.enemies) {
+            enemy.draw(this.ctx);
+        }
+        
+        // 绘制玩家
+        if (this.player) {
+            this.player.draw(this.ctx);
+        }
+        
+        // 绘制特效
+        this.slash.draw(this.ctx);
+        this.particles.draw(this.ctx);
+        
+        this.ctx.restore();
+    }
+    
+    drawBackground() {
+        // 动态网格
+        this.ctx.strokeStyle = 'rgba(0, 255, 136, 0.06)';
+        this.ctx.lineWidth = 1;
+        
+        const gridSize = 60;
+        const offset = this.bgOffset % gridSize;
+        
+        for (let x = -offset; x < this.width; x += gridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, 0);
+            this.ctx.lineTo(x, this.groundY);
+            this.ctx.stroke();
+        }
+        
+        for (let y = 0; y < this.groundY; y += gridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, y);
+            this.ctx.lineTo(this.width, y);
+            this.ctx.stroke();
+        }
+        
+        // 远景建筑剪影
+        this.ctx.fillStyle = 'rgba(0, 30, 40, 0.5)';
+        for (let i = 0; i < 8; i++) {
+            const x = ((i * 200) - this.bgOffset * 0.3) % (this.width + 300);
+            const drawX = x < -150 ? x + this.width + 300 : x;
+            const h = 100 + i * 30;
+            this.ctx.fillRect(drawX, this.groundY - h, 120, h);
+            
+            // 建筑窗户
+            this.ctx.fillStyle = 'rgba(0, 255, 136, 0.1)';
+            for (let wy = 0; wy < h - 30; wy += 40) {
+                for (let wx = 10; wx < 100; wx += 30) {
+                    if (Math.random() > 0.7) {
+                        this.ctx.fillRect(drawX + wx, this.groundY - h + wy + 10, 15, 20);
+                    }
+                }
+            }
+            this.ctx.fillStyle = 'rgba(0, 30, 40, 0.5)';
+        }
+        
+        // 月亮/光源
+        const moonX = this.width - 150;
+        const moonY = 100;
+        
+        const moonGrad = this.ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, 80);
+        moonGrad.addColorStop(0, 'rgba(0, 255, 136, 0.2)');
+        moonGrad.addColorStop(0.5, 'rgba(0, 255, 136, 0.05)');
+        moonGrad.addColorStop(1, 'transparent');
+        
+        this.ctx.fillStyle = moonGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(moonX, moonY, 80, 0, Math.PI * 2);
+        this.ctx.fill();
+    }
+    
+    gameLoop() {
+        if (this.gameState !== 'playing') return;
+        
+        this.update();
+        this.draw();
+        
+        requestAnimationFrame(() => this.gameLoop());
+    }
 }
 
-function updateHUD() {
-  document.getElementById('hudTime').textContent = fmtTime(raceTime).substring(0, 8);
-  document.getElementById('hudLap').textContent = `${Math.min(player.lap, 3)}/3`;
-  document.getElementById('hudSpeed').textContent = Math.floor(player.speed * 200);
-  document.getElementById('hudKills').textContent = player.kills;
-  document.getElementById('nitroFill').style.width = `${player.nitro}%`;
-  const hint = document.getElementById('startHint');
-  if (keys.left || keys.right || keys.drift) hint.style.display = 'none';
-
-  // 更新风车旋转
-  if (trackGroup) {
-    trackGroup.children.forEach(child => {
-      if (child.userData.blades) {
-        child.rotation.y += 0.03;
-      }
-    });
-  }
-}
-
-function drawMinimap() {
-  if (!currentTrack) return;
-  const miniCanvas = document.getElementById('minimapCanvas');
-  const ctx = miniCanvas.getContext('2d');
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, 120, 90);
-
-  // 赛道
-  ctx.strokeStyle = '#444';
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  for (let i = 0; i < currentTrack.path.length; i++) {
-    const x = (currentTrack.path[i].x / currentTrack.worldW) * 120;
-    const y = (currentTrack.path[i].y / currentTrack.worldH) * 90;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.stroke();
-
-  // 玩家
-  ctx.fillStyle = '#00ff77';
-  ctx.beginPath();
-  ctx.arc((player.x / currentTrack.worldW) * 120, (player.z / currentTrack.worldH) * 90, 4, 0, Math.PI * 2);
-  ctx.fill();
-
-  // NPC
-  ctx.fillStyle = '#ff4444';
-  for (const npc of npcs) {
-    if (!npc.alive) continue;
-    ctx.beginPath();
-    ctx.arc((npc.x / currentTrack.worldW) * 120, (npc.z / currentTrack.worldH) * 90, 3, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-// ============== 主循环 ==============
-function animate() {
-  requestAnimationFrame(animate);
-
-  if (gameState === 'playing') {
-    raceTime = (Date.now() - startTime) / 1000;
-    updatePlayer();
-    updateNPCs();
-    checkNPCCollision();
-    updateEffects();
-    updateCamera();
-    updateHUD();
-    drawMinimap();
-
-    if (player.finished) showResult();
-  }
-
-  renderer.render(scene, camera);
-}
-
-// ============== NPC头像 ==============
-function drawNPCAvatars() {
-  NPC_TYPES.forEach((npc, i) => {
-    const cvs = document.getElementById(`npc${i + 2}`);
-    if (!cvs) return;
-    const c = cvs.getContext('2d');
-    const g = c.createRadialGradient(40, 30, 5, 40, 40, 40);
-    g.addColorStop(0, '#' + npc.color.toString(16).padStart(6, '0'));
-    g.addColorStop(1, '#' + npc.color.toString(16).padStart(6, '0'));
-    c.fillStyle = g;
-    c.beginPath(); c.arc(40, 40, 38, 0, Math.PI * 2); c.fill();
-    c.fillStyle = 'white';
-    c.font = 'bold 14px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText(npc.name, 40, 42);
-  });
-}
-
-// ============== 初始化 ==============
-initThree();
-drawNPCAvatars();
-animate();
+// 启动
+const game = new Game();
 </script>
 </body>
 </html>
