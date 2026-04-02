@@ -8,7 +8,7 @@
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <title>翠泣4.0</title>
+    <title>翠泣-终极版</title>
     <style>
       * {
         margin: 0;
@@ -49,10 +49,12 @@
         display: block;
       }
 
-      /* 控制区域 - 移动端占40% */
+      /* 控制区域 - 移动端 */
       #controlArea {
         width: 100%;
         height: 40vh;
+        min-height: 280px;
+        max-height: 350px;
         background: linear-gradient(
           180deg,
           rgba(10, 10, 20, 0.95) 0%,
@@ -60,85 +62,8 @@
         );
         display: none;
         flex-direction: column;
-        padding: 10px 15px 20px;
-        gap: 10px;
-      }
-
-      /* 控制区第一行 */
-      .control-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex: 1;
-      }
-
-      /* 方向键区域 */
-      .dpad-area {
-        display: flex;
-        gap: 12px;
-      }
-
-      /* 技能区域 */
-      .skills-area {
-        display: flex;
-        gap: 10px;
-      }
-      
-      .finisher-row {
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-        padding: 3px 0;
-      }
-      
-      .finisher-btn {
-        width: 55px;
-        height: 45px;
-        border-radius: 10px;
-        background: rgba(100, 0, 100, 0.3);
-        border: 2px solid rgba(255, 0, 255, 0.3);
-        color: #ff88ff;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 1px;
-        position: relative;
-      }
-      
-      .finisher-btn .finisher-label {
-        font-size: 16px;
-        font-weight: bold;
-        color: #ff88ff;
-      }
-      
-      .finisher-btn .finisher-cost {
-        font-size: 9px;
-        color: #ffaa88;
-      }
-      
-      .finisher-btn.ready {
-        background: linear-gradient(135deg, rgba(255, 0, 200, 0.5), rgba(150, 0, 255, 0.5));
-        border-color: #ff00ff;
-        box-shadow: 0 0 20px rgba(255, 0, 255, 0.6);
-        animation: finisherPulse 0.8s ease-in-out infinite;
-      }
-      
-      .finisher-btn.ready .finisher-label {
-        color: #fff;
-        text-shadow: 0 0 10px #ff00ff;
-      }
-      
-      @keyframes finisherPulse {
-        0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 255, 0.4); transform: scale(1); }
-        50% { box-shadow: 0 0 30px rgba(255, 0, 255, 0.8); transform: scale(1.05); }
-      }
-
-      /* 动作键区域 */
-      .action-area {
-        display: flex;
-        gap: 12px;
-        justify-content: flex-end;
+        padding: 8px 12px max(12px, env(safe-area-inset-bottom));
+        gap: 8px;
       }
 
       /* 按键基础样式 */
@@ -152,72 +77,91 @@
         justify-content: center;
         touch-action: manipulation;
         -webkit-touch-action: manipulation;
-        transition:
-          transform 0.1s,
-          box-shadow 0.1s;
+        transition: transform 0.08s, box-shadow 0.08s;
         box-shadow:
           0 4px 15px rgba(0, 0, 0, 0.4),
           inset 0 2px 5px rgba(255, 255, 255, 0.1);
+        -webkit-tap-highlight-color: transparent;
       }
 
-      .game-btn:active {
-        transform: scale(0.92);
+      .game-btn:active, .game-btn.pressed {
+        transform: scale(0.9);
         box-shadow:
           0 2px 8px rgba(0, 0, 0, 0.4),
           inset 0 1px 3px rgba(0, 0, 0, 0.3);
       }
 
-      /* 方向键 */
-      .dpad-btn {
-        width: 65px;
-        height: 65px;
-        font-size: 26px;
-        background: rgba(100, 100, 100, 0.25);
+      /* ========== 第一行：方向键 + 主要动作 ========== */
+      .control-row-main {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex: 1.2;
+        min-height: 90px;
       }
 
-      .dpad-btn:active {
+      /* 方向键区域 */
+      .dpad-area {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .dpad-btn {
+        width: clamp(60px, 18vw, 75px);
+        height: clamp(60px, 18vw, 75px);
+        font-size: clamp(22px, 6vw, 28px);
+        background: rgba(100, 100, 100, 0.25);
+        border-radius: 50%;
+      }
+
+      .dpad-btn:active, .dpad-btn.pressed {
         background: rgba(0, 255, 136, 0.4);
         border-color: #00ff88;
       }
 
-      /* 技能键 */
-      .skill-btn {
-        width: 55px;
-        height: 55px;
-        font-size: 22px;
-        background: rgba(0, 150, 255, 0.25);
-        border-color: rgba(0, 200, 255, 0.5);
+      /* 右侧主要动作区 */
+      .action-main-area {
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
 
-      .skill-btn.ready {
-        background: rgba(0, 200, 255, 0.45);
-        border-color: #00ffff;
-        box-shadow:
-          0 0 15px rgba(0, 255, 255, 0.4),
-          inset 0 2px 5px rgba(255, 255, 255, 0.2);
-        animation: skillPulse 1.5s ease-in-out infinite;
+      .btn-attack {
+        width: clamp(75px, 22vw, 95px);
+        height: clamp(75px, 22vw, 95px);
+        font-size: clamp(16px, 4.5vw, 20px);
+        background: rgba(255, 60, 60, 0.4);
+        border-color: rgba(255, 80, 80, 0.8);
+        box-shadow: 0 4px 20px rgba(255, 60, 60, 0.35);
+        border-radius: 50%;
       }
 
-      @keyframes skillPulse {
-        0%,
-        100% {
-          box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-        }
-        50% {
-          box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
-        }
+      .btn-attack:active, .btn-attack.pressed {
+        background: rgba(255, 80, 80, 0.6);
+        box-shadow: 0 0 30px rgba(255, 80, 80, 0.7);
       }
 
-      .skill-btn .cd-text {
-        font-size: 14px;
-        color: #ff8888;
+      /* ========== 第二行：跳闪 + 技能 ========== */
+      .control-row-sub {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex: 1;
+        min-height: 65px;
       }
 
-      /* 动作键 */
+      .jump-dodge-area {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
       .action-btn {
-        width: 58px;
-        height: 58px;
-        font-size: 16px;
+        width: clamp(50px, 15vw, 62px);
+        height: clamp(50px, 15vw, 62px);
+        font-size: clamp(14px, 4vw, 16px);
+        border-radius: 50%;
       }
 
       .btn-jump {
@@ -225,50 +169,133 @@
         border-color: rgba(0, 150, 255, 0.6);
       }
 
+      .btn-jump:active, .btn-jump.pressed {
+        background: rgba(0, 150, 255, 0.5);
+        border-color: #00aaff;
+      }
+
       .btn-dodge {
         background: rgba(0, 255, 200, 0.25);
         border-color: rgba(0, 255, 200, 0.5);
       }
 
-      .btn-attack {
-        width: 75px;
-        height: 75px;
-        font-size: 18px;
-        background: rgba(255, 60, 60, 0.35);
-        border-color: rgba(255, 80, 80, 0.7);
-        box-shadow: 0 4px 20px rgba(255, 60, 60, 0.3);
+      .btn-dodge:active, .btn-dodge.pressed {
+        background: rgba(0, 255, 200, 0.45);
+        border-color: #00ffcc;
       }
 
-      .btn-attack:active {
-        background: rgba(255, 80, 80, 0.55);
-        box-shadow: 0 0 25px rgba(255, 80, 80, 0.6);
+      /* 技能区域 */
+      .skills-area {
+        display: flex;
+        gap: 8px;
+        align-items: center;
       }
 
-      /* 武器切换 */
+      .skill-btn {
+        width: clamp(48px, 14vw, 58px);
+        height: clamp(48px, 14vw, 58px);
+        font-size: clamp(18px, 5vw, 24px);
+        background: rgba(0, 150, 255, 0.25);
+        border-color: rgba(0, 200, 255, 0.5);
+        border-radius: 50%;
+      }
+
+      .skill-btn.ready {
+        background: rgba(0, 200, 255, 0.5);
+        border-color: #00ffff;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+      }
+
+      .skill-btn .cd-text {
+        font-size: clamp(12px, 3.5vw, 14px);
+        color: #ff8888;
+        font-weight: bold;
+      }
+
+      /* ========== 第三行：终结技 ========== */
+      .finisher-row {
+        display: flex;
+        justify-content: center;
+        gap: clamp(15px, 5vw, 30px);
+        padding: 4px 0;
+        min-height: 50px;
+        align-items: center;
+      }
+
+      .finisher-btn {
+        width: clamp(60px, 18vw, 70px);
+        height: clamp(42px, 12vw, 50px);
+        border-radius: 12px;
+        background: rgba(100, 0, 100, 0.3);
+        border: 2px solid rgba(255, 0, 255, 0.3);
+        color: #ff88ff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        font-size: clamp(14px, 4vw, 16px);
+        font-weight: bold;
+        transition: all 0.15s;
+      }
+
+      .finisher-btn .finisher-cost {
+        font-size: clamp(10px, 3vw, 12px);
+        color: #ffaa88;
+        opacity: 0.8;
+      }
+
+      .finisher-btn.ready {
+        background: linear-gradient(135deg, rgba(255, 0, 200, 0.5), rgba(150, 0, 255, 0.5));
+        border-color: #ff00ff;
+        box-shadow: 0 0 20px rgba(255, 0, 255, 0.6);
+        animation: finisherPulse 1s ease-in-out infinite;
+      }
+
+      .finisher-btn.ready .finisher-label {
+        color: #fff;
+        text-shadow: 0 0 10px #ff00ff;
+      }
+
+      @keyframes finisherPulse {
+        0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 255, 0.4); transform: scale(1); }
+        50% { box-shadow: 0 0 25px rgba(255, 0, 255, 0.8); transform: scale(1.03); }
+      }
+
+      /* ========== 第四行：武器切换 ========== */
       .weapon-row {
         display: flex;
         justify-content: center;
-        gap: 15px;
-        padding: 5px 0;
+        gap: clamp(10px, 3vw, 15px);
+        padding: 4px 0;
+        min-height: 55px;
+        align-items: center;
       }
 
       .weapon-btn {
-        width: 50px;
-        height: 50px;
-        border-radius: 10px;
+        width: clamp(45px, 13vw, 55px);
+        height: clamp(45px, 13vw, 55px);
+        border-radius: 12px;
         border: 2px solid #444;
         background: rgba(0, 0, 0, 0.5);
-        font-size: 24px;
+        font-size: clamp(20px, 5.5vw, 26px);
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.2s;
+        transition: all 0.15s;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .weapon-btn:active, .weapon-btn.pressed {
+        transform: scale(0.92);
+        background: rgba(255, 255, 255, 0.1);
       }
 
       .weapon-btn.active {
         border-color: currentColor;
-        box-shadow: 0 0 15px currentColor;
-        transform: scale(1.1);
+        box-shadow: 0 0 15px currentColor, inset 0 0 10px rgba(255,255,255,0.1);
+        transform: scale(1.08);
       }
 
       /* UI层 */
@@ -762,48 +789,48 @@
 
       <!-- 移动端控制区域 -->
       <div id="controlArea">
-        <!-- 第一行：方向键(左) + 技能(右) -->
-        <div class="control-row">
+        <!-- 第一行：方向键(左) + 攻击(右) -->
+        <div class="control-row-main">
           <div class="dpad-area">
-            <button class="game-btn dpad-btn" id="btnLeft">←</button>
-            <button class="game-btn dpad-btn" id="btnRight">→</button>
+            <button class="game-btn dpad-btn" id="btnLeft" data-key="ArrowLeft">←</button>
+            <button class="game-btn dpad-btn" id="btnRight" data-key="ArrowRight">→</button>
+          </div>
+          <div class="action-main-area">
+            <button class="game-btn btn-attack" id="btnAttack" data-key="KeyJ">攻击</button>
+          </div>
+        </div>
+
+        <!-- 第二行：跳闪(左) + 技能(右) -->
+        <div class="control-row-sub">
+          <div class="jump-dodge-area">
+            <button class="game-btn action-btn btn-jump" id="btnJump" data-key="KeyK">跳</button>
+            <button class="game-btn action-btn btn-dodge" id="btnDodge" data-key="KeyL">闪</button>
           </div>
           <div class="skills-area">
-            <button class="game-btn skill-btn ready" id="btnSkill1">⚡</button>
-            <button class="game-btn skill-btn ready" id="btnSkill2">💨</button>
-            <button class="game-btn skill-btn ready" id="btnSkill3">💪</button>
+            <button class="game-btn skill-btn ready" id="btnSkill1" data-key="Digit1">⚡</button>
+            <button class="game-btn skill-btn ready" id="btnSkill2" data-key="Digit2">💨</button>
+            <button class="game-btn skill-btn ready" id="btnSkill3" data-key="Digit3">💪</button>
           </div>
         </div>
 
-        <!-- 第二行：终结技 -->
+        <!-- 第三行：终结技 -->
         <div class="finisher-row">
-          <button class="game-btn finisher-btn" id="btnFinisherSmall">
-            <span class="finisher-label">U</span>
-            <span class="finisher-cost">5</span>
+          <button class="finisher-btn" id="btnFinisherSmall" data-key="Digit4">
+            <span class="finisher-label">终结</span>
+            <span class="finisher-cost">5连</span>
           </button>
-          <button class="game-btn finisher-btn" id="btnFinisherBig">
-            <span class="finisher-label">I</span>
-            <span class="finisher-cost">10</span>
+          <button class="finisher-btn" id="btnFinisherBig" data-key="Digit5">
+            <span class="finisher-label">必杀</span>
+            <span class="finisher-cost">10连</span>
           </button>
         </div>
 
-        <!-- 第三行：武器切换 -->
+        <!-- 第四行：武器切换 -->
         <div class="weapon-row">
-          <button class="weapon-btn active" id="weapon1" style="color: #00ff88">⚔️</button>
-          <button class="weapon-btn" id="weapon2" style="color: #ff4444">🗡️</button>
-          <button class="weapon-btn" id="weapon3" style="color: #ffaa00">🪝</button>
-          <button class="weapon-btn" id="weapon4" style="color: #ff6600">🔫</button>
-        </div>
-
-        <!-- 第三行：动作键(技能正下方) -->
-        <div class="action-area">
-          <button class="game-btn action-btn btn-jump" id="btnJump">跳</button>
-          <button class="game-btn action-btn btn-dodge" id="btnDodge">
-            闪
-          </button>
-          <button class="game-btn action-btn btn-attack" id="btnAttack">
-            攻击
-          </button>
+          <button class="weapon-btn active" id="weapon1" data-weapon="DUAL_BLADE" style="color: #00ff88">⚔️</button>
+          <button class="weapon-btn" id="weapon2" data-weapon="DUAL_DAGGER" style="color: #ff4444">🗡️</button>
+          <button class="weapon-btn" id="weapon3" data-weapon="DUAL_HOOK" style="color: #ffaa00">🪝</button>
+          <button class="weapon-btn" id="weapon4" data-weapon="AK47" style="color: #ff6600">🔫</button>
         </div>
       </div>
 
@@ -832,7 +859,7 @@
         <div class="pc-key-group">
           <div class="pc-key-row"><span class="key">A</span><span class="key">D</span> 移动</div>
           <div class="pc-key-row"><span class="key">J</span> 攻击 <span class="key">K</span> 跳跃 <span class="key">L</span> 闪避</div>
-          <div class="pc-key-row"><span class="key">Q</span><span class="key">W</span><span class="key">E</span><span class="key">R</span> 切武器</div>
+          <div class="pc-key-row"><span class="key">Q</span>双刀 <span class="key">W</span>双匕 <span class="key">E</span>双钩 <span class="key">R</span>AK47</div>
           <div class="pc-key-row"><span class="key">1</span><span class="key">2</span><span class="key">3</span> 技能</div>
           <div class="pc-key-row"><span class="key">U</span> 小终结(5连) <span class="key">I</span> 大终结(10连)</div>
         </div>
@@ -1238,12 +1265,13 @@
         AK47: {
           name: 'AK47',
           damage: 35,
-          range: 600,
+          range: 800,
           color: '#ff6600',
           knockback: 5,
           type: 'ranged',
-          fireRate: 6, // 射击间隔帧数
-          bulletSpeed: 25,
+          fireRate: 5, // 射击间隔帧数
+          bulletSpeed: 30,
+          bulletOffsetY: -25, // 子弹发射高度偏移（相对于角色底部）
         },
       }
 
@@ -1677,9 +1705,10 @@
             if (this.shootCooldown <= 0) {
               this.shootCooldown = weapon.fireRate
               
-              // 发射子弹
-              const bulletY = this.y + this.height * 0.35
-              const bulletX = this.x + this.facing * 35
+              // 发射子弹 - 调整高度到角色胸部位置
+              const bulletOffsetY = weapon.bulletOffsetY || -25
+              const bulletY = this.y + this.height + bulletOffsetY
+              const bulletX = this.x + this.facing * 45
               game.bullets.add(
                 bulletX,
                 bulletY,
@@ -1692,7 +1721,7 @@
               
               // 枪口闪光
               game.particles.emit(
-                bulletX + this.facing * 20,
+                bulletX + this.facing * 25,
                 bulletY,
                 '#ffff00',
                 5,
@@ -1701,10 +1730,10 @@
               )
               
               // 后坐力效果
-              this.vx = -this.facing * 2
+              this.vx = -this.facing * 1.5
               
               // 屏幕轻微震动
-              game.screenShake = 3
+              game.screenShake = 2
               
               // 音效
               game.audio.playHitSound(Math.min(this.combo, 20))
@@ -2379,83 +2408,85 @@
             
             ctx.shadowBlur = 0;
           } else if (this.currentWeapon === 'AK47') {
-            // AK47 突击步枪
-            const recoil = this.shootCooldown > 0 ? (this.shootCooldown * 0.5) : 0;
+            // AK47 突击步枪 - 更小的尺寸
+            const recoil = this.shootCooldown > 0 ? (this.shootCooldown * 0.3) : 0;
+            const scale = 0.65; // 缩小到65%
             
             ctx.save();
             ctx.rotate(baseAngle);
             ctx.translate(recoil, 0);
+            ctx.scale(scale, scale);
             
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 15;
             ctx.shadowColor = weapon.color;
             
             // 枪托
             ctx.fillStyle = '#3d2817';
-            ctx.fillRect(-50, -8, 30, 16);
+            ctx.fillRect(-45, -6, 25, 12);
             
             // 枪身主体
             ctx.fillStyle = '#4a4a4a';
-            ctx.fillRect(-25, -10, 80, 20);
+            ctx.fillRect(-22, -7, 70, 14);
             
             // 弹匣
             ctx.fillStyle = '#5a3d2b';
             ctx.beginPath();
-            ctx.moveTo(5, 10);
-            ctx.lineTo(25, 10);
-            ctx.lineTo(20, 45);
-            ctx.lineTo(0, 45);
+            ctx.moveTo(5, 8);
+            ctx.lineTo(22, 8);
+            ctx.lineTo(18, 38);
+            ctx.lineTo(2, 38);
             ctx.closePath();
             ctx.fill();
             
             // 握把
             ctx.fillStyle = '#3d2817';
-            ctx.fillRect(-10, 10, 15, 25);
+            ctx.fillRect(-8, 8, 12, 22);
             
             // 枪管
             ctx.fillStyle = '#666';
-            ctx.fillRect(55, -6, 35, 12);
+            ctx.fillRect(48, -4, 30, 8);
             
             // 枪口装置
             ctx.fillStyle = '#333';
-            ctx.fillRect(90, -7, 12, 14);
+            ctx.fillRect(78, -5, 10, 10);
             
             // 瞄准器
             ctx.fillStyle = '#222';
-            ctx.fillRect(30, -16, 4, 6);
-            ctx.fillRect(70, -16, 3, 6);
+            ctx.fillRect(25, -12, 3, 4);
+            ctx.fillRect(60, -12, 2, 4);
             
             // 枪身细节线
             ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.moveTo(-20, -6);
-            ctx.lineTo(50, -6);
+            ctx.moveTo(-18, -4);
+            ctx.lineTo(45, -4);
             ctx.stroke();
             ctx.beginPath();
-            ctx.moveTo(-20, 6);
-            ctx.lineTo(50, 6);
+            ctx.moveTo(-18, 4);
+            ctx.lineTo(45, 4);
             ctx.stroke();
             
             // 射击时的枪口火焰
-            if (this.shootCooldown > 3) {
-              ctx.shadowBlur = 30;
+            if (this.shootCooldown > 2) {
+              ctx.shadowBlur = 25;
               ctx.shadowColor = '#ffaa00';
               
               // 主火焰
-              const flameLength = 25 + Math.random() * 15;
+              const flameLength = 20 + Math.random() * 12;
               ctx.fillStyle = '#ffaa00';
               ctx.beginPath();
-              ctx.moveTo(102, -4);
-              ctx.lineTo(102 + flameLength, 0);
-              ctx.lineTo(102, 4);
+              ctx.moveTo(88, -3);
+              ctx.lineTo(88 + flameLength, 0);
+              ctx.lineTo(88, 3);
               ctx.fill();
               
               // 内焰
               ctx.fillStyle = '#ffff00';
               ctx.beginPath();
-              ctx.moveTo(102, -2);
-              ctx.lineTo(102 + flameLength * 0.6, 0);
-              ctx.lineTo(102, 2);
+              ctx.moveTo(88, -1.5);
+              ctx.lineTo(88 + flameLength * 0.6, 0);
+              ctx.lineTo(88, 1.5);
               ctx.fill();
               
               // 火星粒子
@@ -2464,9 +2495,9 @@
                 for (let i = 0; i < 3; i++) {
                   ctx.beginPath();
                   ctx.arc(
-                    105 + Math.random() * 15,
-                    (Math.random() - 0.5) * 10,
-                    1 + Math.random() * 2,
+                    90 + Math.random() * 12,
+                    (Math.random() - 0.5) * 8,
+                    1 + Math.random() * 1.5,
                     0, Math.PI * 2
                   );
                   ctx.fill();
@@ -2946,66 +2977,106 @@
             this.startGame()
           })
 
-          // 移动端按钮
-          const addTouch = (id, code) => {
-            const btn = document.getElementById(id)
+          // 移动端触摸处理 - 改进版
+          const setupTouchButton = (btn, code) => {
             if (!btn) return
 
-            const onStart = (e) => {
+            let touchId = null
+
+            const onTouchStart = (e) => {
               e.preventDefault()
               e.stopPropagation()
-              this.input.keys[code] = true
-              this.input.keysPressed[code] = true
-              btn.style.transform = 'scale(0.92)'
+              
+              // 只处理第一个触摸点
+              if (touchId === null) {
+                touchId = e.changedTouches[0].identifier
+                this.input.keys[code] = true
+                this.input.keysPressed[code] = true
+                btn.classList.add('pressed')
+              }
             }
 
-            const onEnd = (e) => {
+            const onTouchEnd = (e) => {
               e.preventDefault()
               e.stopPropagation()
-              this.input.keys[code] = false
-              btn.style.transform = 'scale(1)'
+              
+              // 检查是否是同一个触摸点
+              for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === touchId) {
+                  touchId = null
+                  this.input.keys[code] = false
+                  btn.classList.remove('pressed')
+                  break
+                }
+              }
             }
 
-            btn.addEventListener('touchstart', onStart, { passive: false })
-            btn.addEventListener('touchend', onEnd, { passive: false })
-            btn.addEventListener('touchcancel', onEnd, { passive: false })
+            const onTouchCancel = (e) => {
+              onTouchEnd(e)
+            }
+
+            btn.addEventListener('touchstart', onTouchStart, { passive: false, capture: true })
+            btn.addEventListener('touchend', onTouchEnd, { passive: false, capture: true })
+            btn.addEventListener('touchcancel', onTouchCancel, { passive: false, capture: true })
+            
+            // 防止鼠标事件干扰
             btn.addEventListener('mousedown', (e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }, { passive: false })
+            
+            btn.addEventListener('contextmenu', (e) => {
               e.preventDefault()
             })
           }
 
-          addTouch('btnLeft', 'ArrowLeft')
-          addTouch('btnRight', 'ArrowRight')
-          addTouch('btnAttack', 'KeyJ')
-          addTouch('btnJump', 'KeyK')
-          addTouch('btnDodge', 'KeyL')
-          addTouch('btnSkill1', 'Digit1')
-          addTouch('btnSkill2', 'Digit2')
-          addTouch('btnSkill3', 'Digit3')
-          addTouch('btnFinisherSmall', 'Digit4')
-          addTouch('btnFinisherBig', 'Digit5')
+          // 设置所有游戏按钮
+          const gameButtons = [
+            ['btnLeft', 'ArrowLeft'],
+            ['btnRight', 'ArrowRight'],
+            ['btnAttack', 'KeyJ'],
+            ['btnJump', 'KeyK'],
+            ['btnDodge', 'KeyL'],
+            ['btnSkill1', 'Digit1'],
+            ['btnSkill2', 'Digit2'],
+            ['btnSkill3', 'Digit3'],
+            ['btnFinisherSmall', 'Digit4'],
+            ['btnFinisherBig', 'Digit5'],
+          ]
 
-          // 武器切换按钮
-          document
-            .getElementById('weapon1')
-            .addEventListener('click', () =>
-              this.player?.switchWeapon('DUAL_BLADE', this),
-            )
-          document
-            .getElementById('weapon2')
-            .addEventListener('click', () =>
-              this.player?.switchWeapon('DUAL_DAGGER', this),
-            )
-          document
-            .getElementById('weapon3')
-            .addEventListener('click', () =>
-              this.player?.switchWeapon('DUAL_HOOK', this),
-            )
-          document
-            .getElementById('weapon4')
-            .addEventListener('click', () =>
-              this.player?.switchWeapon('AK47', this),
-            )
+          gameButtons.forEach(([id, code]) => {
+            setupTouchButton(document.getElementById(id), code)
+          })
+
+          // 武器切换按钮 - 使用改进的触摸处理
+          const weaponBtns = [
+            ['weapon1', 'DUAL_BLADE'],
+            ['weapon2', 'DUAL_DAGGER'],
+            ['weapon3', 'DUAL_HOOK'],
+            ['weapon4', 'AK47'],
+          ]
+
+          weaponBtns.forEach(([id, weaponType]) => {
+            const btn = document.getElementById(id)
+            if (!btn) return
+
+            const onWeaponTouch = (e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              if (this.player) {
+                this.player.switchWeapon(weaponType, this)
+              }
+            }
+
+            btn.addEventListener('touchstart', onWeaponTouch, { passive: false })
+            btn.addEventListener('mousedown', (e) => {
+              e.preventDefault()
+              if (this.player) {
+                this.player.switchWeapon(weaponType, this)
+              }
+            })
+            btn.addEventListener('contextmenu', (e) => e.preventDefault())
+          })
         }
 
         startGame() {
