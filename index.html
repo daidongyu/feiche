@@ -8,7 +8,7 @@
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <title>翠泣2.0</title>
+    <title>翠泣3.0</title>
     <style>
       * {
         margin: 0;
@@ -84,33 +84,54 @@
         gap: 10px;
       }
       
-      .finisher-area {
+      .finisher-row {
         display: flex;
-        gap: 8px;
-        margin-left: 10px;
+        justify-content: center;
+        gap: 30px;
+        padding: 5px 0;
       }
       
       .finisher-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 14px;
-        border-radius: 50%;
-        background: rgba(255, 0, 255, 0.2);
-        border: 2px solid rgba(255, 0, 255, 0.5);
+        width: 70px;
+        height: 55px;
+        border-radius: 12px;
+        background: rgba(100, 0, 100, 0.3);
+        border: 2px solid rgba(255, 0, 255, 0.3);
         color: #ff88ff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
         position: relative;
       }
       
+      .finisher-btn .finisher-label {
+        font-size: 20px;
+        font-weight: bold;
+        color: #ff88ff;
+      }
+      
+      .finisher-btn .finisher-cost {
+        font-size: 10px;
+        color: #ffaa88;
+      }
+      
       .finisher-btn.ready {
-        background: rgba(255, 0, 255, 0.5);
+        background: linear-gradient(135deg, rgba(255, 0, 200, 0.5), rgba(150, 0, 255, 0.5));
         border-color: #ff00ff;
-        box-shadow: 0 0 15px rgba(255, 0, 255, 0.6);
-        animation: finisherPulse 1s ease-in-out infinite;
+        box-shadow: 0 0 20px rgba(255, 0, 255, 0.6);
+        animation: finisherPulse 0.8s ease-in-out infinite;
+      }
+      
+      .finisher-btn.ready .finisher-label {
+        color: #fff;
+        text-shadow: 0 0 10px #ff00ff;
       }
       
       @keyframes finisherPulse {
-        0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 255, 0.4); }
-        50% { box-shadow: 0 0 25px rgba(255, 0, 255, 0.8); }
+        0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 255, 0.4); transform: scale(1); }
+        50% { box-shadow: 0 0 30px rgba(255, 0, 255, 0.8); transform: scale(1.05); }
       }
 
       /* 动作键区域 */
@@ -730,23 +751,25 @@
             <button class="game-btn skill-btn ready" id="btnSkill2">💨</button>
             <button class="game-btn skill-btn ready" id="btnSkill3">💪</button>
           </div>
-          <div class="finisher-area">
-            <button class="game-btn finisher-btn" id="btnFinisherSmall">U</button>
-            <button class="game-btn finisher-btn" id="btnFinisherBig">I</button>
-          </div>
         </div>
 
-        <!-- 第二行：武器切换 -->
+        <!-- 第二行：终结技 -->
+        <div class="finisher-row">
+          <button class="game-btn finisher-btn" id="btnFinisherSmall">
+            <span class="finisher-label">U</span>
+            <span class="finisher-cost">5</span>
+          </button>
+          <button class="game-btn finisher-btn" id="btnFinisherBig">
+            <span class="finisher-label">I</span>
+            <span class="finisher-cost">10</span>
+          </button>
+        </div>
+
+        <!-- 第三行：武器切换 -->
         <div class="weapon-row">
-          <button class="weapon-btn active" id="weapon1" style="color: #00ff88">
-            ⚔️
-          </button>
-          <button class="weapon-btn" id="weapon2" style="color: #ff4444">
-            🗡️
-          </button>
-          <button class="weapon-btn" id="weapon3" style="color: #ffaa00">
-            🪝
-          </button>
+          <button class="weapon-btn active" id="weapon1" style="color: #00ff88">⚔️</button>
+          <button class="weapon-btn" id="weapon2" style="color: #ff4444">🗡️</button>
+          <button class="weapon-btn" id="weapon3" style="color: #ffaa00">🪝</button>
         </div>
 
         <!-- 第三行：动作键(技能正下方) -->
@@ -788,7 +811,7 @@
           <div class="pc-key-row"><span class="key">J</span> 攻击 <span class="key">K</span> 跳跃 <span class="key">L</span> 闪避</div>
           <div class="pc-key-row"><span class="key">Q</span><span class="key">W</span><span class="key">E</span> 切武器</div>
           <div class="pc-key-row"><span class="key">1</span><span class="key">2</span><span class="key">3</span> 技能</div>
-          <div class="pc-key-row"><span class="key">U</span> 小终结(30连) <span class="key">I</span> 大终结(100连)</div>
+          <div class="pc-key-row"><span class="key">U</span> 小终结(5连) <span class="key">I</span> 大终结(10连)</div>
         </div>
       </div>
     </div>
@@ -1235,13 +1258,13 @@
 
           // 终结技 - 任何状态都可使用（优先检测）
           if (input.isPressed('KeyU') || input.isPressed('Digit4')) {
-            if (this.combo >= 30) {
+            if (this.combo >= 5) {
               this.executeFinisher(false, game)
               return
             }
           }
           if (input.isPressed('KeyI') || input.isPressed('Digit5')) {
-            if (this.combo >= 100) {
+            if (this.combo >= 10) {
               this.executeFinisher(true, game)
               return
             }
@@ -2820,9 +2843,9 @@
             comboEl.style.opacity = '1'
             comboNum.textContent = this.player.combo
             comboNum.style.color =
-              this.player.combo >= 100
+              this.player.combo >= 10
                 ? '#ff00ff'
-                : this.player.combo >= 30
+                : this.player.combo >= 5
                   ? '#00ffff'
                   : '#ffdd00'
           } else {
@@ -2865,19 +2888,15 @@
           const btnSmall = document.getElementById('btnFinisherSmall')
           const btnBig = document.getElementById('btnFinisherBig')
           if (btnSmall && btnBig) {
-            if (this.player.combo >= 30) {
+            if (this.player.combo >= 5) {
               btnSmall.classList.add('ready')
-              btnSmall.textContent = 'U'
             } else {
               btnSmall.classList.remove('ready')
-              btnSmall.textContent = 'U'
             }
-            if (this.player.combo >= 100) {
+            if (this.player.combo >= 10) {
               btnBig.classList.add('ready')
-              btnBig.textContent = 'I'
             } else {
               btnBig.classList.remove('ready')
-              btnBig.textContent = 'I'
             }
           }
         }
