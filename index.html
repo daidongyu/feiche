@@ -8,7 +8,7 @@
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <title>翠泣3.0</title>
+    <title>翠泣4.0</title>
     <style>
       * {
         margin: 0;
@@ -87,14 +87,14 @@
       .finisher-row {
         display: flex;
         justify-content: center;
-        gap: 30px;
-        padding: 5px 0;
+        gap: 20px;
+        padding: 3px 0;
       }
       
       .finisher-btn {
-        width: 70px;
-        height: 55px;
-        border-radius: 12px;
+        width: 55px;
+        height: 45px;
+        border-radius: 10px;
         background: rgba(100, 0, 100, 0.3);
         border: 2px solid rgba(255, 0, 255, 0.3);
         color: #ff88ff;
@@ -102,18 +102,18 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 2px;
+        gap: 1px;
         position: relative;
       }
       
       .finisher-btn .finisher-label {
-        font-size: 20px;
+        font-size: 16px;
         font-weight: bold;
         color: #ff88ff;
       }
       
       .finisher-btn .finisher-cost {
-        font-size: 10px;
+        font-size: 9px;
         color: #ffaa88;
       }
       
@@ -478,6 +478,28 @@
         z-index: 1000;
         width: 100%;
       }
+      
+      /* 连招名称 */
+      .combo-name {
+        position: fixed;
+        top: 25%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: clamp(20px, 6vw, 32px);
+        font-weight: bold;
+        pointer-events: none;
+        animation: comboNamePop 1s ease-out forwards;
+        text-align: center;
+        z-index: 999;
+        transition: opacity 0.3s;
+      }
+      
+      @keyframes comboNamePop {
+        0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+        30% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+        70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+      }
 
       @keyframes finisherText {
         0% {
@@ -770,6 +792,7 @@
           <button class="weapon-btn active" id="weapon1" style="color: #00ff88">⚔️</button>
           <button class="weapon-btn" id="weapon2" style="color: #ff4444">🗡️</button>
           <button class="weapon-btn" id="weapon3" style="color: #ffaa00">🪝</button>
+          <button class="weapon-btn" id="weapon4" style="color: #ff6600">🔫</button>
         </div>
 
         <!-- 第三行：动作键(技能正下方) -->
@@ -809,7 +832,7 @@
         <div class="pc-key-group">
           <div class="pc-key-row"><span class="key">A</span><span class="key">D</span> 移动</div>
           <div class="pc-key-row"><span class="key">J</span> 攻击 <span class="key">K</span> 跳跃 <span class="key">L</span> 闪避</div>
-          <div class="pc-key-row"><span class="key">Q</span><span class="key">W</span><span class="key">E</span> 切武器</div>
+          <div class="pc-key-row"><span class="key">Q</span><span class="key">W</span><span class="key">E</span><span class="key">R</span> 切武器</div>
           <div class="pc-key-row"><span class="key">1</span><span class="key">2</span><span class="key">3</span> 技能</div>
           <div class="pc-key-row"><span class="key">U</span> 小终结(5连) <span class="key">I</span> 大终结(10连)</div>
         </div>
@@ -1026,6 +1049,122 @@
         }
       }
 
+      // ==================== 子弹系统 ====================
+      class BulletSystem {
+        constructor() {
+          this.bullets = []
+        }
+
+        add(x, y, facing, damage, speed, range, color) {
+          this.bullets.push({
+            x,
+            y,
+            vx: facing * speed,
+            vy: 0,
+            facing,
+            damage,
+            color,
+            range,
+            traveled: 0,
+            size: 6,
+            trail: [],
+          })
+        }
+
+        update(game) {
+          for (let i = this.bullets.length - 1; i >= 0; i--) {
+            const b = this.bullets[i]
+            
+            // 保存轨迹
+            b.trail.push({ x: b.x, y: b.y })
+            if (b.trail.length > 5) b.trail.shift()
+            
+            b.x += b.vx
+            b.y += b.vy
+            b.traveled += Math.abs(b.vx)
+
+            // 检查碰撞敌人
+            let hit = false
+            for (const enemy of game.enemies) {
+              const distX = Math.abs(enemy.x - b.x)
+              const distY = Math.abs(enemy.y - b.y + 30)
+              if (distX < 30 && distY < 40) {
+                enemy.takeDamage(b.damage, b.facing * 8)
+                game.particles.emit(enemy.x, enemy.y - 30, b.color, 8, 4, 12)
+                game.spawnDamageNumber(enemy.x, enemy.y - 50, b.damage, false)
+                if (enemy.health <= 0) {
+                  game.player.addCombo(5)
+                  game.onEnemyKilled()
+                } else {
+                  game.player.addCombo(1)
+                }
+                hit = true
+                break
+              }
+            }
+
+            // 检查碰撞Boss
+            if (!hit && game.boss) {
+              const distX = Math.abs(game.boss.x - b.x)
+              const distY = Math.abs(game.boss.y - b.y + 50)
+              if (distX < 50 && distY < 70) {
+                game.boss.takeDamage(b.damage, b.facing * 5)
+                game.particles.emit(b.x, b.y, b.color, 10, 5, 15)
+                game.spawnDamageNumber(b.x, b.y - 30, b.damage, true)
+                hit = true
+              }
+            }
+
+            // 移除超出范围或命中的子弹
+            if (hit || b.traveled >= b.range || b.x < 0 || b.x > game.width) {
+              // 命中效果
+              if (hit) {
+                game.shockwaves.add(b.x, b.y, b.color, 40)
+              }
+              this.bullets.splice(i, 1)
+            }
+          }
+        }
+
+        draw(ctx) {
+          for (const b of this.bullets) {
+            // 绘制轨迹
+            ctx.save()
+            ctx.strokeStyle = b.color
+            ctx.lineWidth = 2
+            ctx.globalAlpha = 0.5
+            ctx.beginPath()
+            for (let i = 0; i < b.trail.length; i++) {
+              if (i === 0) {
+                ctx.moveTo(b.trail[i].x, b.trail[i].y)
+              } else {
+                ctx.lineTo(b.trail[i].x, b.trail[i].y)
+              }
+            }
+            ctx.lineTo(b.x, b.y)
+            ctx.stroke()
+
+            // 绘制子弹
+            ctx.globalAlpha = 1
+            ctx.shadowBlur = 15
+            ctx.shadowColor = b.color
+            ctx.fillStyle = '#ffffff'
+            ctx.beginPath()
+            ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2)
+            ctx.fill()
+            
+            // 子弹光晕
+            ctx.fillStyle = b.color
+            ctx.beginPath()
+            ctx.arc(b.x, b.y, b.size * 1.5, 0, Math.PI * 2)
+            ctx.fill()
+            ctx.restore()
+          }
+          ctx.shadowBlur = 0
+          ctx.globalAlpha = 1
+        }
+      }
+
       // ==================== 冲击波效果 ====================
       class ShockWave {
         constructor() {
@@ -1078,6 +1217,7 @@
           range: 140,
           color: '#00ff88',
           knockback: 8,
+          type: 'melee',
         },
         DUAL_DAGGER: {
           name: '双匕',
@@ -1085,6 +1225,7 @@
           range: 100,
           color: '#ff4444',
           backstabBonus: 4,
+          type: 'melee',
         },
         DUAL_HOOK: {
           name: '双钩',
@@ -1092,6 +1233,17 @@
           range: 200,
           color: '#ffaa00',
           knockback: 20,
+          type: 'melee',
+        },
+        AK47: {
+          name: 'AK47',
+          damage: 35,
+          range: 600,
+          color: '#ff6600',
+          knockback: 5,
+          type: 'ranged',
+          fireRate: 6, // 射击间隔帧数
+          bulletSpeed: 25,
         },
       }
 
@@ -1128,6 +1280,7 @@
 
           this.currentWeapon = 'DUAL_BLADE'
           this.attackCombo = 0
+          this.attackType = 'normal' // normal, left, right, air
 
           this.combo = 0
           this.comboTimer = 0
@@ -1149,6 +1302,9 @@
             dash: { cd: 0, maxCd: 120 },
             grab: { cd: 0, maxCd: 240 },
           }
+          
+          // AK47 射击冷却
+          this.shootCooldown = 0
         }
 
         update(input, game) {
@@ -1163,6 +1319,8 @@
           for (let key in this.skills) {
             if (this.skills[key].cd > 0) this.skills[key].cd--
           }
+          
+          if (this.shootCooldown > 0) this.shootCooldown--
 
           if (this.combo > 0) {
             this.comboTimer++
@@ -1237,7 +1395,7 @@
           }
 
           if (input.isPressed('KeyK')) this.jump()
-          if (input.isPressed('KeyJ')) this.startAttack(game)
+          if (input.isPressed('KeyJ')) this.startAttack(game, input)
           if (
             (input.isPressed('KeyL') || input.isPressed('ShiftLeft')) &&
             this.dodgeCooldown <= 0
@@ -1255,6 +1413,7 @@
           if (input.isPressed('KeyQ')) this.switchWeapon('DUAL_BLADE', game)
           if (input.isPressed('KeyW')) this.switchWeapon('DUAL_DAGGER', game)
           if (input.isPressed('KeyE')) this.switchWeapon('DUAL_HOOK', game)
+          if (input.isPressed('KeyR')) this.switchWeapon('AK47', game)
 
           // 终结技 - 任何状态都可使用（优先检测）
           if (input.isPressed('KeyU') || input.isPressed('Digit4')) {
@@ -1282,6 +1441,14 @@
             if (input.isPressed('KeyJ')) {
               this.attackCombo++
               this.stateTimer = 0
+              // 连招时可以切换攻击类型
+              if (!this.onGround) {
+                this.attackType = 'air'
+              } else if (input.isDown('KeyA') || input.isDown('ArrowLeft')) {
+                this.attackType = 'left'
+              } else if (input.isDown('KeyD') || input.isDown('ArrowRight')) {
+                this.attackType = 'right'
+              }
             }
           }
 
@@ -1477,9 +1644,20 @@
           }
         }
 
-        startAttack(game) {
+        startAttack(game, input) {
           this.state = 'attack'
           this.stateTimer = 0
+          
+          // 判断连招类型
+          if (!this.onGround) {
+            this.attackType = 'air'
+          } else if (input.isDown('KeyA') || input.isDown('ArrowLeft')) {
+            this.attackType = 'left'
+          } else if (input.isDown('KeyD') || input.isDown('ArrowRight')) {
+            this.attackType = 'right'
+          } else {
+            this.attackType = 'normal'
+          }
         }
 
         startAirAttack(game) {
@@ -1493,16 +1671,87 @@
 
         performAttackHit(game) {
           const weapon = WEAPONS[this.currentWeapon]
+          
+          // AK47 远程射击
+          if (this.currentWeapon === 'AK47') {
+            if (this.shootCooldown <= 0) {
+              this.shootCooldown = weapon.fireRate
+              
+              // 发射子弹
+              const bulletY = this.y + this.height * 0.35
+              const bulletX = this.x + this.facing * 35
+              game.bullets.add(
+                bulletX,
+                bulletY,
+                this.facing,
+                weapon.damage,
+                weapon.bulletSpeed,
+                weapon.range,
+                weapon.color
+              )
+              
+              // 枪口闪光
+              game.particles.emit(
+                bulletX + this.facing * 20,
+                bulletY,
+                '#ffff00',
+                5,
+                3,
+                8
+              )
+              
+              // 后坐力效果
+              this.vx = -this.facing * 2
+              
+              // 屏幕轻微震动
+              game.screenShake = 3
+              
+              // 音效
+              game.audio.playHitSound(Math.min(this.combo, 20))
+            }
+            return
+          }
+          
           const hitX = this.x + this.facing * weapon.range * 0.5
+          
+          // 连招特效配置
+          let comboMultiplier = 1
+          let comboColor = weapon.color
+          let comboName = ''
+          let extraKnockback = 0
+          
+          if (this.attackType === 'air') {
+            // 空中攻击：金色特效，伤害x2，击飞
+            comboMultiplier = 2
+            comboColor = '#ffd700'
+            comboName = '空中斩'
+            extraKnockback = 10
+          } else if (this.attackType === 'left') {
+            // 左滑攻击：冰蓝特效，伤害x1.5
+            comboMultiplier = 1.5
+            comboColor = '#00ffff'
+            comboName = '左闪击'
+            extraKnockback = 5
+          } else if (this.attackType === 'right') {
+            // 右滑攻击：火焰特效，伤害x1.5
+            comboMultiplier = 1.5
+            comboColor = '#ff6600'
+            comboName = '右突刺'
+            extraKnockback = 5
+          }
           
           // 攻击冲击波效果
           if (this.stateTimer === 2) {
             game.shockwaves.add(
               this.x + this.facing * 50,
               this.y + this.height * 0.5,
-              weapon.color,
+              comboColor,
               weapon.range * 0.8
             )
+            // 连招名称提示
+            if (comboName && this.attackCombo === 0) {
+              game.showComboName(comboName, comboColor)
+            }
           }
 
           for (const enemy of game.enemies) {
@@ -1510,7 +1759,7 @@
             const distY = Math.abs(enemy.y - (this.y + this.height * 0.4))
 
             if (distX < weapon.range && distY < 60) {
-              let damage = weapon.damage
+              let damage = weapon.damage * comboMultiplier
               let isBackstab = false
 
               if (this.currentWeapon === 'DUAL_DAGGER') {
@@ -1527,8 +1776,14 @@
               damage *= 1 + this.attackCombo * 0.12
               const killed = enemy.takeDamage(
                 damage,
-                this.facing * weapon.knockback,
+                this.facing * (weapon.knockback + extraKnockback),
               )
+              
+              // 空中攻击额外击飞
+              if (this.attackType === 'air') {
+                enemy.vy = -15
+                enemy.launched = true
+              }
 
               if (killed) {
                 this.addCombo(5)
@@ -1537,21 +1792,25 @@
                 this.addCombo(1)
               }
 
-              const slashColor = isBackstab ? '#ff0066' : weapon.color
+              const slashColor = isBackstab ? '#ff0066' : comboColor
+              const slashWidth = isBackstab ? 140 : (this.attackType === 'air' ? 160 : 110)
               game.slash.add(
                 enemy.x,
                 enemy.y - 25,
                 this.facing > 0 ? 0 : Math.PI,
-                isBackstab ? 120 : 90,
+                slashWidth,
                 slashColor,
-                8,
+                this.attackType === 'air' ? 12 : 8,
               )
+              // 连招额外粒子
+              let particleCount = isBackstab ? 10 : 6
+              if (this.attackType !== 'normal') particleCount += 5
               game.particles.emit(
                 enemy.x,
                 enemy.y - 30,
                 slashColor,
-                isBackstab ? 10 : 6,
-                5,
+                particleCount,
+                this.attackType === 'air' ? 8 : 5,
                 15,
               )
               game.spawnDamageNumber(
@@ -2119,6 +2378,104 @@
             ctx.restore();
             
             ctx.shadowBlur = 0;
+          } else if (this.currentWeapon === 'AK47') {
+            // AK47 突击步枪
+            const recoil = this.shootCooldown > 0 ? (this.shootCooldown * 0.5) : 0;
+            
+            ctx.save();
+            ctx.rotate(baseAngle);
+            ctx.translate(recoil, 0);
+            
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = weapon.color;
+            
+            // 枪托
+            ctx.fillStyle = '#3d2817';
+            ctx.fillRect(-50, -8, 30, 16);
+            
+            // 枪身主体
+            ctx.fillStyle = '#4a4a4a';
+            ctx.fillRect(-25, -10, 80, 20);
+            
+            // 弹匣
+            ctx.fillStyle = '#5a3d2b';
+            ctx.beginPath();
+            ctx.moveTo(5, 10);
+            ctx.lineTo(25, 10);
+            ctx.lineTo(20, 45);
+            ctx.lineTo(0, 45);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 握把
+            ctx.fillStyle = '#3d2817';
+            ctx.fillRect(-10, 10, 15, 25);
+            
+            // 枪管
+            ctx.fillStyle = '#666';
+            ctx.fillRect(55, -6, 35, 12);
+            
+            // 枪口装置
+            ctx.fillStyle = '#333';
+            ctx.fillRect(90, -7, 12, 14);
+            
+            // 瞄准器
+            ctx.fillStyle = '#222';
+            ctx.fillRect(30, -16, 4, 6);
+            ctx.fillRect(70, -16, 3, 6);
+            
+            // 枪身细节线
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-20, -6);
+            ctx.lineTo(50, -6);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-20, 6);
+            ctx.lineTo(50, 6);
+            ctx.stroke();
+            
+            // 射击时的枪口火焰
+            if (this.shootCooldown > 3) {
+              ctx.shadowBlur = 30;
+              ctx.shadowColor = '#ffaa00';
+              
+              // 主火焰
+              const flameLength = 25 + Math.random() * 15;
+              ctx.fillStyle = '#ffaa00';
+              ctx.beginPath();
+              ctx.moveTo(102, -4);
+              ctx.lineTo(102 + flameLength, 0);
+              ctx.lineTo(102, 4);
+              ctx.fill();
+              
+              // 内焰
+              ctx.fillStyle = '#ffff00';
+              ctx.beginPath();
+              ctx.moveTo(102, -2);
+              ctx.lineTo(102 + flameLength * 0.6, 0);
+              ctx.lineTo(102, 2);
+              ctx.fill();
+              
+              // 火星粒子
+              if (Math.random() > 0.5) {
+                ctx.fillStyle = '#ff6600';
+                for (let i = 0; i < 3; i++) {
+                  ctx.beginPath();
+                  ctx.arc(
+                    105 + Math.random() * 15,
+                    (Math.random() - 0.5) * 10,
+                    1 + Math.random() * 2,
+                    0, Math.PI * 2
+                  );
+                  ctx.fill();
+                }
+              }
+            }
+            
+            ctx.restore();
+            ctx.shadowBlur = 0;
           }
         }
       }
@@ -2546,6 +2903,7 @@
           this.particles = new ParticleSystem()
           this.slash = new SlashEffect()
           this.shockwaves = new ShockWave()
+          this.bullets = new BulletSystem()
 
           this.player = null
           this.enemies = []
@@ -2642,6 +3000,11 @@
             .getElementById('weapon3')
             .addEventListener('click', () =>
               this.player?.switchWeapon('DUAL_HOOK', this),
+            )
+          document
+            .getElementById('weapon4')
+            .addEventListener('click', () =>
+              this.player?.switchWeapon('AK47', this),
             )
         }
 
@@ -2780,6 +3143,19 @@
           setTimeout(() => el.remove(), 2000)
         }
 
+        showComboName(name, color) {
+          const el = document.createElement('div')
+          el.className = 'combo-name'
+          el.textContent = name
+          el.style.color = color
+          el.style.textShadow = `0 0 10px ${color}, 0 0 20px ${color}`
+          document.getElementById('ui').appendChild(el)
+          setTimeout(() => {
+            el.style.opacity = '0'
+            setTimeout(() => el.remove(), 300)
+          }, 800)
+        }
+
         update() {
           if (this.gameState !== 'playing') return
 
@@ -2829,6 +3205,7 @@
 
           this.particles.update()
           this.slash.update()
+          this.bullets.update(this)
           this.updateUI()
         }
 
@@ -2867,13 +3244,15 @@
           })
 
           // 武器激活状态
-          const weapons = ['DUAL_BLADE', 'DUAL_DAGGER', 'DUAL_HOOK']
+          const weapons = ['DUAL_BLADE', 'DUAL_DAGGER', 'DUAL_HOOK', 'AK47']
           weapons.forEach((w, i) => {
             const btn = document.getElementById('weapon' + (i + 1))
-            if (this.player.currentWeapon === w) {
-              btn.classList.add('active')
-            } else {
-              btn.classList.remove('active')
+            if (btn) {
+              if (this.player.currentWeapon === w) {
+                btn.classList.add('active')
+              } else {
+                btn.classList.remove('active')
+              }
             }
           })
 
@@ -2988,6 +3367,7 @@
 
           this.slash.draw(this.ctx)
           this.particles.draw(this.ctx)
+          this.bullets.draw(this.ctx)
 
           this.ctx.restore()
         }
