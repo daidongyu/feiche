@@ -1,2318 +1,2657 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>翠泣 - 极致连击</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>翠泣1.0</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            touch-action: none;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        touch-action: none;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Microsoft YaHei', sans-serif;
+      }
+
+      #gameContainer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* 游戏画布区域 - 移动端占60% */
+      #gameCanvas {
+        width: 100%;
+        height: 60vh;
+        background: #0a0a12;
+        display: block;
+      }
+
+      /* 控制区域 - 移动端占40% */
+      #controlArea {
+        width: 100%;
+        height: 40vh;
+        background: linear-gradient(
+          180deg,
+          rgba(10, 10, 20, 0.95) 0%,
+          rgba(5, 5, 10, 1) 100%
+        );
+        display: none;
+        flex-direction: column;
+        padding: 10px 15px 20px;
+        gap: 10px;
+      }
+
+      /* 控制区第一行 */
+      .control-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex: 1;
+      }
+
+      /* 方向键区域 */
+      .dpad-area {
+        display: flex;
+        gap: 12px;
+      }
+
+      /* 技能区域 */
+      .skills-area {
+        display: flex;
+        gap: 10px;
+      }
+
+      /* 动作键区域 */
+      .action-area {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+
+      /* 按键基础样式 */
+      .game-btn {
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+        -webkit-touch-action: manipulation;
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s;
+        box-shadow:
+          0 4px 15px rgba(0, 0, 0, 0.4),
+          inset 0 2px 5px rgba(255, 255, 255, 0.1);
+      }
+
+      .game-btn:active {
+        transform: scale(0.92);
+        box-shadow:
+          0 2px 8px rgba(0, 0, 0, 0.4),
+          inset 0 1px 3px rgba(0, 0, 0, 0.3);
+      }
+
+      /* 方向键 */
+      .dpad-btn {
+        width: 65px;
+        height: 65px;
+        font-size: 26px;
+        background: rgba(100, 100, 100, 0.25);
+      }
+
+      .dpad-btn:active {
+        background: rgba(0, 255, 136, 0.4);
+        border-color: #00ff88;
+      }
+
+      /* 技能键 */
+      .skill-btn {
+        width: 55px;
+        height: 55px;
+        font-size: 22px;
+        background: rgba(0, 150, 255, 0.25);
+        border-color: rgba(0, 200, 255, 0.5);
+      }
+
+      .skill-btn.ready {
+        background: rgba(0, 200, 255, 0.45);
+        border-color: #00ffff;
+        box-shadow:
+          0 0 15px rgba(0, 255, 255, 0.4),
+          inset 0 2px 5px rgba(255, 255, 255, 0.2);
+        animation: skillPulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes skillPulse {
+        0%,
+        100% {
+          box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
         }
-        
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Microsoft YaHei', sans-serif;
+        50% {
+          box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
         }
-        
-        #gameContainer {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+      }
+
+      .skill-btn .cd-text {
+        font-size: 14px;
+        color: #ff8888;
+      }
+
+      /* 动作键 */
+      .action-btn {
+        width: 58px;
+        height: 58px;
+        font-size: 16px;
+      }
+
+      .btn-jump {
+        background: rgba(0, 100, 255, 0.3);
+        border-color: rgba(0, 150, 255, 0.6);
+      }
+
+      .btn-dodge {
+        background: rgba(0, 255, 200, 0.25);
+        border-color: rgba(0, 255, 200, 0.5);
+      }
+
+      .btn-attack {
+        width: 75px;
+        height: 75px;
+        font-size: 18px;
+        background: rgba(255, 60, 60, 0.35);
+        border-color: rgba(255, 80, 80, 0.7);
+        box-shadow: 0 4px 20px rgba(255, 60, 60, 0.3);
+      }
+
+      .btn-attack:active {
+        background: rgba(255, 80, 80, 0.55);
+        box-shadow: 0 0 25px rgba(255, 80, 80, 0.6);
+      }
+
+      /* 武器切换 */
+      .weapon-row {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        padding: 5px 0;
+      }
+
+      .weapon-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        border: 2px solid #444;
+        background: rgba(0, 0, 0, 0.5);
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .weapon-btn.active {
+        border-color: currentColor;
+        box-shadow: 0 0 15px currentColor;
+        transform: scale(1.1);
+      }
+
+      /* UI层 */
+      #ui {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 60vh;
+        pointer-events: none;
+      }
+
+      .health-bar-container {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        width: 40vw;
+        max-width: 200px;
+      }
+
+      .health-bar {
+        height: 14px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid #555;
+        border-radius: 7px;
+        overflow: hidden;
+      }
+
+      .health-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #ff3333, #ff6666);
+        transition: width 0.2s;
+        box-shadow: 0 0 8px #ff3333;
+      }
+
+      .progress-bar {
+        margin-top: 4px;
+        height: 6px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid #444;
+        border-radius: 3px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #ff00ff, #ff66ff);
+        transition: width 0.1s;
+      }
+
+      .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 8px;
+        color: #fff;
+        text-shadow: 0 0 2px #000;
+      }
+
+      .combo-display {
+        position: absolute;
+        top: 5px;
+        right: 10px;
+        text-align: right;
+      }
+
+      .combo-number {
+        font-size: clamp(40px, 10vw, 60px);
+        font-weight: 900;
+        color: #ffdd00;
+        text-shadow:
+          0 0 10px #ff6600,
+          0 0 20px #ff3300;
+        line-height: 1;
+        animation: comboPulse 0.3s ease-out;
+      }
+
+      .combo-text {
+        font-size: 12px;
+        color: #ff8844;
+        letter-spacing: 2px;
+      }
+
+      @keyframes comboPulse {
+        0% {
+          transform: scale(1.5);
         }
-        
-        /* 游戏画布区域 - 移动端占60% */
-        #gameCanvas {
-            width: 100%;
-            height: 60vh;
-            background: #0a0a12;
-            display: block;
+        100% {
+          transform: scale(1);
         }
-        
-        /* 控制区域 - 移动端占40% */
+      }
+
+      .kill-counter {
+        position: absolute;
+        top: 50px;
+        left: 8px;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 12px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 4px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .kill-counter .target {
+        color: #00ff88;
+        font-weight: bold;
+      }
+
+      .boss-bar {
+        position: absolute;
+        top: 45px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 70vw;
+        max-width: 350px;
+        display: none;
+      }
+
+      .boss-bar.active {
+        display: block;
+      }
+
+      .boss-name {
+        text-align: center;
+        color: #ff4444;
+        font-size: 12px;
+        font-weight: bold;
+        text-shadow: 0 0 5px #ff0000;
+        margin-bottom: 2px;
+      }
+
+      .boss-health {
+        height: 10px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid #ff4444;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+
+      .boss-health-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #ff0000, #ff4444);
+        transition: width 0.3s;
+        box-shadow: 0 0 10px #ff0000;
+      }
+
+      .level-badge {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(0, 255, 136, 0.5);
+        border-radius: 15px;
+        padding: 3px 12px;
+        color: #00ff88;
+        font-size: 11px;
+        font-weight: bold;
+      }
+
+      /* 伤害数字 */
+      .damage-number {
+        position: absolute;
+        font-size: 20px;
+        font-weight: bold;
+        color: #ffdd00;
+        text-shadow: 0 0 5px #ff6600;
+        pointer-events: none;
+        animation: damageFloat 0.8s ease-out forwards;
+      }
+
+      @keyframes damageFloat {
+        0% {
+          transform: translateY(0) scale(0.8);
+          opacity: 0;
+        }
+        20% {
+          transform: translateY(-15px) scale(1.1);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-40px) scale(1);
+          opacity: 0;
+        }
+      }
+
+      /* 终结技文字 */
+      .finisher-text {
+        position: absolute;
+        top: 35%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: clamp(28px, 8vw, 48px);
+        font-weight: 900;
+        color: #fff;
+        text-shadow:
+          0 0 20px #ff00ff,
+          0 0 40px #ff00ff;
+        pointer-events: none;
+        animation: finisherText 2s ease-out forwards;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      @keyframes finisherText {
+        0% {
+          transform: translate(-50%, -50%) scale(0);
+          opacity: 0;
+        }
+        20% {
+          transform: translate(-50%, -50%) scale(1.2);
+          opacity: 1;
+        }
+        80% {
+          opacity: 1;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 0;
+        }
+      }
+
+      /* 开始界面 */
+      .start-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(180deg, #0a1a2a 0%, #000 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .start-avatar {
+        width: min(280px, 60vw);
+        height: min(280px, 60vw);
+        border-radius: 50%;
+        border: 4px solid #00ff88;
+        overflow: hidden;
+        box-shadow: 0 0 60px rgba(0, 255, 136, 0.4);
+        margin-bottom: 30px;
+        position: relative;
+      }
+
+      .start-avatar::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+          45deg,
+          transparent,
+          rgba(255, 255, 255, 0.15),
+          transparent
+        );
+        animation: shine 3s infinite;
+      }
+
+      @keyframes shine {
+        0% {
+          transform: translateX(-100%) rotate(45deg);
+        }
+        100% {
+          transform: translateX(100%) rotate(45deg);
+        }
+      }
+
+      .start-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .start-title {
+        font-size: clamp(60px, 15vw, 100px);
+        font-weight: 900;
+        color: #00ff88;
+        text-shadow:
+          0 0 30px #00ff88,
+          0 0 60px #00aa66;
+        letter-spacing: 20px;
+        margin-bottom: 40px;
+        animation: titleGlow 2s ease-in-out infinite;
+      }
+
+      @keyframes titleGlow {
+        0%,
+        100% {
+          text-shadow: 0 0 30px #00ff88;
+        }
+        50% {
+          text-shadow:
+            0 0 50px #00ff88,
+            0 0 80px #00aa66;
+        }
+      }
+
+      .start-btn {
+        padding: 18px 60px;
+        font-size: 24px;
+        background: linear-gradient(135deg, #00ff88, #00aa66);
+        border: none;
+        border-radius: 40px;
+        color: #000;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 0 40px rgba(0, 255, 136, 0.4);
+        animation: btnPulse 2s ease-in-out infinite;
+      }
+
+      @keyframes btnPulse {
+        0%,
+        100% {
+          transform: scale(1);
+          box-shadow: 0 0 40px rgba(0, 255, 136, 0.4);
+        }
+        50% {
+          transform: scale(1.05);
+          box-shadow: 0 0 60px rgba(0, 255, 136, 0.6);
+        }
+      }
+
+      /* 关卡过渡 */
+      .level-transition {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 500;
+      }
+
+      .level-transition.active {
+        display: flex;
+      }
+
+      .level-transition h2 {
+        font-size: 36px;
+        color: #00ff88;
+        margin-bottom: 20px;
+      }
+
+      .level-transition p {
+        font-size: 18px;
+        color: #fff;
+      }
+
+      /* 检测移动端 */
+      @media (hover: none) and (pointer: coarse) {
         #controlArea {
-            width: 100%;
-            height: 40vh;
-            background: linear-gradient(180deg, rgba(10,10,20,0.95) 0%, rgba(5,5,10,1) 100%);
-            display: none;
-            flex-direction: column;
-            padding: 10px 15px 20px;
-            gap: 10px;
+          display: flex;
         }
-        
-        /* 控制区第一行 */
-        .control-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex: 1;
+      }
+
+      /* PC端适配 */
+      @media (min-width: 1024px) {
+        #gameCanvas {
+          height: 100vh;
         }
-        
-        /* 方向键区域 */
-        .dpad-area {
-            display: flex;
-            gap: 12px;
-        }
-        
-        /* 技能区域 */
-        .skills-area {
-            display: flex;
-            gap: 10px;
-        }
-        
-        /* 动作键区域 */
-        .action-area {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-        
-        /* 按键基础样式 */
-        .game-btn {
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.3);
-            color: white;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: manipulation;
-            -webkit-touch-action: manipulation;
-            transition: transform 0.1s, box-shadow 0.1s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4), inset 0 2px 5px rgba(255,255,255,0.1);
-        }
-        
-        .game-btn:active {
-            transform: scale(0.92);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 3px rgba(0,0,0,0.3);
-        }
-        
-        /* 方向键 */
-        .dpad-btn {
-            width: 65px;
-            height: 65px;
-            font-size: 26px;
-            background: rgba(100,100,100,0.25);
-        }
-        
-        .dpad-btn:active {
-            background: rgba(0,255,136,0.4);
-            border-color: #00ff88;
-        }
-        
-        /* 技能键 */
-        .skill-btn {
-            width: 55px;
-            height: 55px;
-            font-size: 22px;
-            background: rgba(0,150,255,0.25);
-            border-color: rgba(0,200,255,0.5);
-        }
-        
-        .skill-btn.ready {
-            background: rgba(0,200,255,0.45);
-            border-color: #00ffff;
-            box-shadow: 0 0 15px rgba(0,255,255,0.4), inset 0 2px 5px rgba(255,255,255,0.2);
-            animation: skillPulse 1.5s ease-in-out infinite;
-        }
-        
-        @keyframes skillPulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(0,255,255,0.3); }
-            50% { box-shadow: 0 0 20px rgba(0,255,255,0.6); }
-        }
-        
-        .skill-btn .cd-text {
-            font-size: 14px;
-            color: #ff8888;
-        }
-        
-        /* 动作键 */
-        .action-btn {
-            width: 58px;
-            height: 58px;
-            font-size: 16px;
-        }
-        
-        .btn-jump {
-            background: rgba(0,100,255,0.3);
-            border-color: rgba(0,150,255,0.6);
-        }
-        
-        .btn-dodge {
-            background: rgba(0,255,200,0.25);
-            border-color: rgba(0,255,200,0.5);
-        }
-        
-        .btn-attack {
-            width: 75px;
-            height: 75px;
-            font-size: 18px;
-            background: rgba(255,60,60,0.35);
-            border-color: rgba(255,80,80,0.7);
-            box-shadow: 0 4px 20px rgba(255,60,60,0.3);
-        }
-        
-        .btn-attack:active {
-            background: rgba(255,80,80,0.55);
-            box-shadow: 0 0 25px rgba(255,80,80,0.6);
-        }
-        
-        /* 武器切换 */
-        .weapon-row {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            padding: 5px 0;
-        }
-        
-        .weapon-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            border: 2px solid #444;
-            background: rgba(0,0,0,0.5);
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-        
-        .weapon-btn.active {
-            border-color: currentColor;
-            box-shadow: 0 0 15px currentColor;
-            transform: scale(1.1);
-        }
-        
-        /* UI层 */
         #ui {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 60vh;
-            pointer-events: none;
+          height: 100vh;
         }
-        
-        .health-bar-container {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            width: 40vw;
-            max-width: 200px;
-        }
-        
-        .health-bar {
-            height: 14px;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid #555;
-            border-radius: 7px;
-            overflow: hidden;
-        }
-        
-        .health-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff3333, #ff6666);
-            transition: width 0.2s;
-            box-shadow: 0 0 8px #ff3333;
-        }
-        
-        .progress-bar {
-            margin-top: 4px;
-            height: 6px;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid #444;
-            border-radius: 3px;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff00ff, #ff66ff);
-            transition: width 0.1s;
-        }
-        
-        .progress-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 8px;
-            color: #fff;
-            text-shadow: 0 0 2px #000;
-        }
-        
-        .combo-display {
-            position: absolute;
-            top: 5px;
-            right: 10px;
-            text-align: right;
-        }
-        
-        .combo-number {
-            font-size: clamp(40px, 10vw, 60px);
-            font-weight: 900;
-            color: #ffdd00;
-            text-shadow: 0 0 10px #ff6600, 0 0 20px #ff3300;
-            line-height: 1;
-            animation: comboPulse 0.3s ease-out;
-        }
-        
-        .combo-text {
-            font-size: 12px;
-            color: #ff8844;
-            letter-spacing: 2px;
-        }
-        
-        @keyframes comboPulse {
-            0% { transform: scale(1.5); }
-            100% { transform: scale(1); }
-        }
-        
-        .kill-counter {
-            position: absolute;
-            top: 50px;
-            left: 8px;
-            color: rgba(255,255,255,0.8);
-            font-size: 12px;
-            background: rgba(0,0,0,0.5);
-            padding: 4px 10px;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .kill-counter .target {
-            color: #00ff88;
-            font-weight: bold;
-        }
-        
-        .boss-bar {
-            position: absolute;
-            top: 45px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 70vw;
-            max-width: 350px;
-            display: none;
-        }
-        
-        .boss-bar.active {
-            display: block;
-        }
-        
-        .boss-name {
-            text-align: center;
-            color: #ff4444;
-            font-size: 12px;
-            font-weight: bold;
-            text-shadow: 0 0 5px #ff0000;
-            margin-bottom: 2px;
-        }
-        
-        .boss-health {
-            height: 10px;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid #ff4444;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-        
-        .boss-health-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff0000, #ff4444);
-            transition: width 0.3s;
-            box-shadow: 0 0 10px #ff0000;
-        }
-        
-        .level-badge {
-            position: absolute;
-            top: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.6);
-            border: 1px solid rgba(0,255,136,0.5);
-            border-radius: 15px;
-            padding: 3px 12px;
-            color: #00ff88;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        
-        /* 伤害数字 */
-        .damage-number {
-            position: absolute;
-            font-size: 20px;
-            font-weight: bold;
-            color: #ffdd00;
-            text-shadow: 0 0 5px #ff6600;
-            pointer-events: none;
-            animation: damageFloat 0.8s ease-out forwards;
-        }
-        
-        @keyframes damageFloat {
-            0% { transform: translateY(0) scale(0.8); opacity: 0; }
-            20% { transform: translateY(-15px) scale(1.1); opacity: 1; }
-            100% { transform: translateY(-40px) scale(1); opacity: 0; }
-        }
-        
-        /* 终结技文字 */
-        .finisher-text {
-            position: absolute;
-            top: 35%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: clamp(28px, 8vw, 48px);
-            font-weight: 900;
-            color: #fff;
-            text-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff;
-            pointer-events: none;
-            animation: finisherText 2s ease-out forwards;
-            text-align: center;
-            white-space: nowrap;
-        }
-        
-        @keyframes finisherText {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-            80% { opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-        }
-        
-        /* 开始界面 */
-        .start-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(180deg, #0a1a2a 0%, #000 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        
-        .start-avatar {
-            width: min(280px, 60vw);
-            height: min(280px, 60vw);
-            border-radius: 50%;
-            border: 4px solid #00ff88;
-            overflow: hidden;
-            box-shadow: 0 0 60px rgba(0,255,136,0.4);
-            margin-bottom: 30px;
-            position: relative;
-        }
-        
-        .start-avatar::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
-            animation: shine 3s infinite;
-        }
-        
-        @keyframes shine {
-            0% { transform: translateX(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) rotate(45deg); }
-        }
-        
-        .start-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .start-title {
-            font-size: clamp(60px, 15vw, 100px);
-            font-weight: 900;
-            color: #00ff88;
-            text-shadow: 0 0 30px #00ff88, 0 0 60px #00aa66;
-            letter-spacing: 20px;
-            margin-bottom: 40px;
-            animation: titleGlow 2s ease-in-out infinite;
-        }
-        
-        @keyframes titleGlow {
-            0%, 100% { text-shadow: 0 0 30px #00ff88; }
-            50% { text-shadow: 0 0 50px #00ff88, 0 0 80px #00aa66; }
-        }
-        
-        .start-btn {
-            padding: 18px 60px;
-            font-size: 24px;
-            background: linear-gradient(135deg, #00ff88, #00aa66);
-            border: none;
-            border-radius: 40px;
-            color: #000;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 0 40px rgba(0,255,136,0.4);
-            animation: btnPulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes btnPulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(0,255,136,0.4); }
-            50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(0,255,136,0.6); }
-        }
-        
-        /* 关卡过渡 */
-        .level-transition {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 500;
-        }
-        
-        .level-transition.active {
-            display: flex;
-        }
-        
-        .level-transition h2 {
-            font-size: 36px;
-            color: #00ff88;
-            margin-bottom: 20px;
-        }
-        
-        .level-transition p {
-            font-size: 18px;
-            color: #fff;
-        }
-        
-        /* 检测移动端 */
-        @media (hover: none) and (pointer: coarse) {
-            #controlArea {
-                display: flex;
-            }
-        }
-        
-        /* PC端适配 */
-        @media (min-width: 1024px) {
-            #gameCanvas {
-                height: 100vh;
-            }
-            #ui {
-                height: 100vh;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
-        
-        <div id="ui">
-            <div class="level-badge" id="levelBadge">关卡 1</div>
-            
-            <div class="health-bar-container">
-                <div class="health-bar">
-                    <div class="health-fill" id="healthFill" style="width: 100%"></div>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-                    <div class="progress-text" id="progressText">0/10</div>
-                </div>
-            </div>
-            
-            <div class="kill-counter" id="killCounter">
-                击杀: <span id="killCount">0</span> / <span class="target" id="targetCount">10</span>
-            </div>
-            
-            <div class="boss-bar" id="bossBar">
-                <div class="boss-name" id="bossName">BOSS</div>
-                <div class="boss-health">
-                    <div class="boss-health-fill" id="bossHealthFill" style="width: 100%"></div>
-                </div>
-            </div>
-            
-            <div class="combo-display" id="comboDisplay" style="opacity: 0">
-                <div class="combo-number" id="comboNumber">0</div>
-                <div class="combo-text">连击</div>
-            </div>
+      <canvas id="gameCanvas"></canvas>
+
+      <div id="ui">
+        <div class="level-badge" id="levelBadge">关卡 1</div>
+
+        <div class="health-bar-container">
+          <div class="health-bar">
+            <div class="health-fill" id="healthFill" style="width: 100%"></div>
+          </div>
+          <div class="progress-bar">
+            <div
+              class="progress-fill"
+              id="progressFill"
+              style="width: 0%"
+            ></div>
+            <div class="progress-text" id="progressText">0/10</div>
+          </div>
         </div>
-        
-        <!-- 移动端控制区域 -->
-        <div id="controlArea">
-            <!-- 第一行：方向键(左) + 技能(右) -->
-            <div class="control-row">
-                <div class="dpad-area">
-                    <button class="game-btn dpad-btn" id="btnLeft">←</button>
-                    <button class="game-btn dpad-btn" id="btnRight">→</button>
-                </div>
-                <div class="skills-area">
-                    <button class="game-btn skill-btn ready" id="btnSkill1">⚡</button>
-                    <button class="game-btn skill-btn ready" id="btnSkill2">💨</button>
-                    <button class="game-btn skill-btn ready" id="btnSkill3">💪</button>
-                </div>
-            </div>
-            
-            <!-- 第二行：武器切换 -->
-            <div class="weapon-row">
-                <button class="weapon-btn active" id="weapon1" style="color: #00ff88">⚔️</button>
-                <button class="weapon-btn" id="weapon2" style="color: #ff4444">🗡️</button>
-                <button class="weapon-btn" id="weapon3" style="color: #ffaa00">🪝</button>
-            </div>
-            
-            <!-- 第三行：动作键(技能正下方) -->
-            <div class="action-area">
-                <button class="game-btn action-btn btn-jump" id="btnJump">跳</button>
-                <button class="game-btn action-btn btn-dodge" id="btnDodge">闪</button>
-                <button class="game-btn action-btn btn-attack" id="btnAttack">攻击</button>
-            </div>
+
+        <div class="kill-counter" id="killCounter">
+          击杀: <span id="killCount">0</span> /
+          <span class="target" id="targetCount">10</span>
         </div>
-        
-        <!-- 开始界面 -->
-        <div class="start-screen" id="startScreen">
-            <div class="start-avatar">
-                <img src="cuicui.jpg" alt="翠翠" id="avatarImg" crossorigin="anonymous">
-            </div>
-            <h1 class="start-title">翠泣</h1>
-            <button class="start-btn" id="startBtn">点击开始</button>
+
+        <div class="boss-bar" id="bossBar">
+          <div class="boss-name" id="bossName">BOSS</div>
+          <div class="boss-health">
+            <div
+              class="boss-health-fill"
+              id="bossHealthFill"
+              style="width: 100%"
+            ></div>
+          </div>
         </div>
-        
-        <!-- 关卡过渡 -->
-        <div class="level-transition" id="levelTransition">
-            <h2 id="transitionTitle">关卡完成!</h2>
-            <p id="transitionDesc">准备进入下一关...</p>
+
+        <div class="combo-display" id="comboDisplay" style="opacity: 0">
+          <div class="combo-number" id="comboNumber">0</div>
+          <div class="combo-text">连击</div>
         </div>
+      </div>
+
+      <!-- 移动端控制区域 -->
+      <div id="controlArea">
+        <!-- 第一行：方向键(左) + 技能(右) -->
+        <div class="control-row">
+          <div class="dpad-area">
+            <button class="game-btn dpad-btn" id="btnLeft">←</button>
+            <button class="game-btn dpad-btn" id="btnRight">→</button>
+          </div>
+          <div class="skills-area">
+            <button class="game-btn skill-btn ready" id="btnSkill1">⚡</button>
+            <button class="game-btn skill-btn ready" id="btnSkill2">💨</button>
+            <button class="game-btn skill-btn ready" id="btnSkill3">💪</button>
+          </div>
+        </div>
+
+        <!-- 第二行：武器切换 -->
+        <div class="weapon-row">
+          <button class="weapon-btn active" id="weapon1" style="color: #00ff88">
+            ⚔️
+          </button>
+          <button class="weapon-btn" id="weapon2" style="color: #ff4444">
+            🗡️
+          </button>
+          <button class="weapon-btn" id="weapon3" style="color: #ffaa00">
+            🪝
+          </button>
+        </div>
+
+        <!-- 第三行：动作键(技能正下方) -->
+        <div class="action-area">
+          <button class="game-btn action-btn btn-jump" id="btnJump">跳</button>
+          <button class="game-btn action-btn btn-dodge" id="btnDodge">
+            闪
+          </button>
+          <button class="game-btn action-btn btn-attack" id="btnAttack">
+            攻击
+          </button>
+        </div>
+      </div>
+
+      <!-- 开始界面 -->
+      <div class="start-screen" id="startScreen">
+        <div class="start-avatar">
+          <img
+            src="./cuicui.jpg"
+            alt="翠翠"
+            id="avatarImg"
+            crossorigin="anonymous"
+          />
+        </div>
+        <h1 class="start-title">翠泣</h1>
+        <button class="start-btn" id="startBtn">点击开始</button>
+      </div>
+
+      <!-- 关卡过渡 -->
+      <div class="level-transition" id="levelTransition">
+        <h2 id="transitionTitle">关卡完成!</h2>
+        <p id="transitionDesc">准备进入下一关...</p>
+      </div>
     </div>
 
-<script>
-// ==================== 音频系统 ====================
-class AudioSystem {
-    constructor() {
-        this.ctx = null;
-        this.enabled = false;
-    }
-    
-    init() {
-        try {
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-            this.enabled = true;
-        } catch(e) {}
-    }
-    
-    playHitSound(combo) {
-        if (!this.enabled || !this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        const freq = 80 + Math.min(combo * 5, 600);
-        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(freq * 0.3, this.ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.08);
-    }
-    
-    playSkillSound() {
-        if (!this.enabled || !this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(200, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.3);
-        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.3);
-    }
-    
-    playFinisherSound(isBig) {
-        if (!this.enabled || !this.ctx) return;
-        const duration = isBig ? 1.2 : 0.7;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(isBig ? 150 : 200, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + duration * 0.5);
-        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + duration);
-    }
-}
-
-// ==================== 输入处理 ====================
-class InputHandler {
-    constructor() {
-        this.keys = {};
-        this.keysPressed = {};
-        
-        window.addEventListener('keydown', (e) => {
-            this.keys[e.code] = true;
-            if (!this.keysPressed[e.code]) this.keysPressed[e.code] = true;
-        });
-        
-        window.addEventListener('keyup', (e) => {
-            this.keys[e.code] = false;
-            this.keysPressed[e.code] = false;
-        });
-    }
-    
-    isDown(code) { return !!this.keys[code]; }
-    isPressed(code) {
-        if (this.keysPressed[code]) {
-            this.keysPressed[code] = false;
-            return true;
+    <script>
+      // ==================== 音频系统 ====================
+      class AudioSystem {
+        constructor() {
+          this.ctx = null
+          this.enabled = false
         }
-        return false;
-    }
-}
 
-// ==================== 粒子系统 ====================
-class ParticleSystem {
-    constructor() {
-        this.particles = [];
-    }
-    
-    emit(x, y, color, count, speed, life) {
-        for (let i = 0; i < count; i++) {
-            const angle = (Math.PI * 2 * i) / count + Math.random() * 0.8;
-            const vel = speed * (0.5 + Math.random() * 0.8);
+        init() {
+          try {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)()
+            this.enabled = true
+          } catch (e) {}
+        }
+
+        playHitSound(combo) {
+          if (!this.enabled || !this.ctx) return
+          const osc = this.ctx.createOscillator()
+          const gain = this.ctx.createGain()
+          const freq = 80 + Math.min(combo * 5, 600)
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime)
+          osc.frequency.exponentialRampToValueAtTime(
+            freq * 0.3,
+            this.ctx.currentTime + 0.08,
+          )
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime)
+          gain.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.ctx.currentTime + 0.08,
+          )
+          osc.connect(gain)
+          gain.connect(this.ctx.destination)
+          osc.start()
+          osc.stop(this.ctx.currentTime + 0.08)
+        }
+
+        playSkillSound() {
+          if (!this.enabled || !this.ctx) return
+          const osc = this.ctx.createOscillator()
+          const gain = this.ctx.createGain()
+          osc.type = 'sawtooth'
+          osc.frequency.setValueAtTime(200, this.ctx.currentTime)
+          osc.frequency.exponentialRampToValueAtTime(
+            600,
+            this.ctx.currentTime + 0.3,
+          )
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime)
+          gain.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.ctx.currentTime + 0.3,
+          )
+          osc.connect(gain)
+          gain.connect(this.ctx.destination)
+          osc.start()
+          osc.stop(this.ctx.currentTime + 0.3)
+        }
+
+        playFinisherSound(isBig) {
+          if (!this.enabled || !this.ctx) return
+          const duration = isBig ? 1.2 : 0.7
+          const osc = this.ctx.createOscillator()
+          const gain = this.ctx.createGain()
+          osc.type = 'sawtooth'
+          osc.frequency.setValueAtTime(isBig ? 150 : 200, this.ctx.currentTime)
+          osc.frequency.exponentialRampToValueAtTime(
+            600,
+            this.ctx.currentTime + duration * 0.5,
+          )
+          gain.gain.setValueAtTime(0.4, this.ctx.currentTime)
+          gain.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.ctx.currentTime + duration,
+          )
+          osc.connect(gain)
+          gain.connect(this.ctx.destination)
+          osc.start()
+          osc.stop(this.ctx.currentTime + duration)
+        }
+      }
+
+      // ==================== 输入处理 ====================
+      class InputHandler {
+        constructor() {
+          this.keys = {}
+          this.keysPressed = {}
+
+          window.addEventListener('keydown', (e) => {
+            this.keys[e.code] = true
+            if (!this.keysPressed[e.code]) this.keysPressed[e.code] = true
+          })
+
+          window.addEventListener('keyup', (e) => {
+            this.keys[e.code] = false
+            this.keysPressed[e.code] = false
+          })
+        }
+
+        isDown(code) {
+          return !!this.keys[code]
+        }
+        isPressed(code) {
+          if (this.keysPressed[code]) {
+            this.keysPressed[code] = false
+            return true
+          }
+          return false
+        }
+      }
+
+      // ==================== 粒子系统 ====================
+      class ParticleSystem {
+        constructor() {
+          this.particles = []
+        }
+
+        emit(x, y, color, count, speed, life) {
+          for (let i = 0; i < count; i++) {
+            const angle = (Math.PI * 2 * i) / count + Math.random() * 0.8
+            const vel = speed * (0.5 + Math.random() * 0.8)
             this.particles.push({
-                x, y, vx: Math.cos(angle) * vel, vy: Math.sin(angle) * vel,
-                life: life * (0.7 + Math.random() * 0.6),
-                maxLife: life, color, size: 3 + Math.random() * 5
-            });
+              x,
+              y,
+              vx: Math.cos(angle) * vel,
+              vy: Math.sin(angle) * vel,
+              life: life * (0.7 + Math.random() * 0.6),
+              maxLife: life,
+              color,
+              size: 3 + Math.random() * 5,
+            })
+          }
         }
-    }
-    
-    update() {
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const p = this.particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.4;
-            p.vx *= 0.98;
-            p.life--;
-            if (p.life <= 0) this.particles.splice(i, 1);
-        }
-    }
-    
-    draw(ctx) {
-        for (const p of this.particles) {
-            const alpha = p.life / p.maxLife;
-            ctx.globalAlpha = alpha;
-            ctx.fillStyle = p.color;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-    }
-}
 
-// ==================== 刀光效果 ====================
-class SlashEffect {
-    constructor() {
-        this.slashes = [];
-    }
-    
-    add(x, y, angle, width, color, duration) {
-        this.slashes.push({ x, y, angle, width, color, life: duration, maxLife: duration });
-    }
-    
-    addUltimateSlash(x, y) {
-        for (let i = 0; i < 8; i++) {
-            this.add(x, y, (Math.PI / 4) * i, 400, '#ff00ff', 25);
+        update() {
+          for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i]
+            p.x += p.vx
+            p.y += p.vy
+            p.vy += 0.4
+            p.vx *= 0.98
+            p.life--
+            if (p.life <= 0) this.particles.splice(i, 1)
+          }
         }
-    }
-    
-    update() {
-        for (let i = this.slashes.length - 1; i >= 0; i--) {
-            this.slashes[i].life--;
-            if (this.slashes[i].life <= 0) this.slashes.splice(i, 1);
+
+        draw(ctx) {
+          for (const p of this.particles) {
+            const alpha = p.life / p.maxLife
+            ctx.globalAlpha = alpha
+            ctx.fillStyle = p.color
+            ctx.beginPath()
+            ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2)
+            ctx.fill()
+          }
+          ctx.globalAlpha = 1
         }
-    }
-    
-    draw(ctx) {
-        for (const s of this.slashes) {
-            const alpha = s.life / s.maxLife;
-            ctx.save();
-            ctx.translate(s.x, s.y);
-            ctx.rotate(s.angle);
-            ctx.strokeStyle = s.color;
-            ctx.lineWidth = 6;
-            ctx.globalAlpha = alpha;
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = s.color;
-            ctx.beginPath();
-            ctx.moveTo(-s.width/2, 0);
-            ctx.lineTo(s.width/2, 0);
-            ctx.stroke();
-            ctx.restore();
+      }
+
+      // ==================== 刀光效果 ====================
+      class SlashEffect {
+        constructor() {
+          this.slashes = []
         }
-        ctx.globalAlpha = 1;
-        ctx.shadowBlur = 0;
-    }
-}
 
-// ==================== 配置 ====================
-const WEAPONS = {
-    DUAL_BLADE: { name: '双刀', damage: 25, range: 120, color: '#00ff88', knockback: 6 },
-    DUAL_DAGGER: { name: '双匕', damage: 40, range: 90, color: '#ff4444', backstabBonus: 3 },
-    DUAL_HOOK: { name: '双钩', damage: 32, range: 180, color: '#ffaa00', knockback: 15 }
-};
+        add(x, y, angle, width, color, duration) {
+          this.slashes.push({
+            x,
+            y,
+            angle,
+            width,
+            color,
+            life: duration,
+            maxLife: duration,
+          })
+        }
 
-const LEVELS = [
-    { 
-        name: '训练场', 
-        targetKills: 8,
-        enemyCount: 2, 
-        eliteChance: 0,
-        boss: null,
-        colors: { bg: '#0a0a12', ground: '#2d2d3d', accent: '#00ff88' }
-    },
-    { 
-        name: '霓虹废墟', 
-        targetKills: 12,
-        enemyCount: 3, 
-        eliteChance: 0.3,
-        boss: 'destroyer',
-        colors: { bg: '#1a0a2a', ground: '#3d2d4d', accent: '#ff00ff' }
-    },
-    { 
-        name: '深渊炼狱', 
-        targetKills: 15,
-        enemyCount: 4, 
-        eliteChance: 0.5,
-        boss: 'abyss',
-        colors: { bg: '#0a0505', ground: '#3d2020', accent: '#ff4444' }
-    }
-];
+        addUltimateSlash(x, y) {
+          for (let i = 0; i < 8; i++) {
+            this.add(x, y, (Math.PI / 4) * i, 400, '#ff00ff', 25)
+          }
+        }
 
-// ==================== 玩家类 ====================
-class Player {
-    constructor(x, y, avatarImg, isMobile) {
-        this.x = x;
-        this.y = y;
-        this.vx = 0;
-        this.vy = 0;
-        // 移动端增大角色
-        this.scale = isMobile ? 1.4 : 1;
-        this.width = 40 * this.scale;
-        this.height = 70 * this.scale;
-        this.facing = 1;
-        this.avatarImg = avatarImg;
-        
-        this.state = 'idle';
-        this.stateTimer = 0;
-        this.onGround = false;
-        
-        this.currentWeapon = 'DUAL_BLADE';
-        this.attackCombo = 0;
-        
-        this.combo = 0;
-        this.comboTimer = 0;
-        
-        this.maxHealth = 100;
-        this.health = 100;
-        this.moveSpeed = 7;
-        this.jumpPower = -17;
-        
-        this.dodgeCooldown = 0;
-        this.isInvincible = false;
-        this.invincibleTimer = 0;
-        
-        this.animFrame = 0;
-        this.airJumps = 0;
-        
-        this.skills = {
+        update() {
+          for (let i = this.slashes.length - 1; i >= 0; i--) {
+            this.slashes[i].life--
+            if (this.slashes[i].life <= 0) this.slashes.splice(i, 1)
+          }
+        }
+
+        draw(ctx) {
+          for (const s of this.slashes) {
+            const alpha = s.life / s.maxLife
+            ctx.save()
+            ctx.translate(s.x, s.y)
+            ctx.rotate(s.angle)
+            ctx.strokeStyle = s.color
+            ctx.lineWidth = 6
+            ctx.globalAlpha = alpha
+            ctx.shadowBlur = 20
+            ctx.shadowColor = s.color
+            ctx.beginPath()
+            ctx.moveTo(-s.width / 2, 0)
+            ctx.lineTo(s.width / 2, 0)
+            ctx.stroke()
+            ctx.restore()
+          }
+          ctx.globalAlpha = 1
+          ctx.shadowBlur = 0
+        }
+      }
+
+      // ==================== 配置 ====================
+      const WEAPONS = {
+        DUAL_BLADE: {
+          name: '双刀',
+          damage: 25,
+          range: 120,
+          color: '#00ff88',
+          knockback: 6,
+        },
+        DUAL_DAGGER: {
+          name: '双匕',
+          damage: 40,
+          range: 90,
+          color: '#ff4444',
+          backstabBonus: 3,
+        },
+        DUAL_HOOK: {
+          name: '双钩',
+          damage: 32,
+          range: 180,
+          color: '#ffaa00',
+          knockback: 15,
+        },
+      }
+
+      const LEVELS = [
+        {
+          name: '训练场',
+          targetKills: 8,
+          enemyCount: 2,
+          eliteChance: 0,
+          boss: null,
+          colors: { bg: '#0a0a12', ground: '#2d2d3d', accent: '#00ff88' },
+        },
+        {
+          name: '霓虹废墟',
+          targetKills: 12,
+          enemyCount: 3,
+          eliteChance: 0.3,
+          boss: 'destroyer',
+          colors: { bg: '#1a0a2a', ground: '#3d2d4d', accent: '#ff00ff' },
+        },
+        {
+          name: '深渊炼狱',
+          targetKills: 15,
+          enemyCount: 4,
+          eliteChance: 0.5,
+          boss: 'abyss',
+          colors: { bg: '#0a0505', ground: '#3d2020', accent: '#ff4444' },
+        },
+      ]
+
+      // ==================== 玩家类 ====================
+      class Player {
+        constructor(x, y, avatarImg, isMobile) {
+          this.x = x
+          this.y = y
+          this.vx = 0
+          this.vy = 0
+          // 移动端增大角色
+          this.scale = isMobile ? 1.4 : 1
+          this.width = 40 * this.scale
+          this.height = 70 * this.scale
+          this.facing = 1
+          this.avatarImg = avatarImg
+
+          this.state = 'idle'
+          this.stateTimer = 0
+          this.onGround = false
+
+          this.currentWeapon = 'DUAL_BLADE'
+          this.attackCombo = 0
+
+          this.combo = 0
+          this.comboTimer = 0
+
+          this.maxHealth = 100
+          this.health = 100
+          this.moveSpeed = 7
+          this.jumpPower = -17
+
+          this.dodgeCooldown = 0
+          this.isInvincible = false
+          this.invincibleTimer = 0
+
+          this.animFrame = 0
+          this.airJumps = 0
+
+          this.skills = {
             spin: { cd: 0, maxCd: 180 },
             dash: { cd: 0, maxCd: 120 },
-            grab: { cd: 0, maxCd: 240 }
-        };
-    }
-    
-    update(input, game) {
-        this.stateTimer++;
-        this.animFrame++;
-        if (this.dodgeCooldown > 0) this.dodgeCooldown--;
-        if (this.invincibleTimer > 0) {
-            this.invincibleTimer--;
-            if (this.invincibleTimer <= 0) this.isInvincible = false;
+            grab: { cd: 0, maxCd: 240 },
+          }
         }
-        
-        for (let key in this.skills) {
-            if (this.skills[key].cd > 0) this.skills[key].cd--;
-        }
-        
-        if (this.combo > 0) {
-            this.comboTimer++;
+
+        update(input, game) {
+          this.stateTimer++
+          this.animFrame++
+          if (this.dodgeCooldown > 0) this.dodgeCooldown--
+          if (this.invincibleTimer > 0) {
+            this.invincibleTimer--
+            if (this.invincibleTimer <= 0) this.isInvincible = false
+          }
+
+          for (let key in this.skills) {
+            if (this.skills[key].cd > 0) this.skills[key].cd--
+          }
+
+          if (this.combo > 0) {
+            this.comboTimer++
             if (this.comboTimer > 150) {
-                this.combo = Math.max(0, this.combo - 1);
-                this.comboTimer = 0;
+              this.combo = Math.max(0, this.combo - 1)
+              this.comboTimer = 0
             }
-        }
-        
-        this.vy += 0.6;
-        
-        switch(this.state) {
+          }
+
+          this.vy += 0.6
+
+          switch (this.state) {
             case 'idle':
             case 'run':
-                this.handleGroundMovement(input, game);
-                break;
+              this.handleGroundMovement(input, game)
+              break
             case 'attack':
-                this.handleAttack(input, game);
-                break;
+              this.handleAttack(input, game)
+              break
             case 'skill_spin':
-                this.handleSpinSkill(game);
-                break;
+              this.handleSpinSkill(game)
+              break
             case 'skill_dash':
-                this.handleDashSkill(game);
-                break;
+              this.handleDashSkill(game)
+              break
             case 'skill_grab':
-                this.handleGrabSkill(game);
-                break;
+              this.handleGrabSkill(game)
+              break
             case 'jump':
             case 'air_attack':
-                this.handleAirState(input, game);
-                break;
+              this.handleAirState(input, game)
+              break
             case 'dodge':
-                this.handleDodge();
-                break;
-        }
-        
-        this.x += this.vx;
-        this.y += this.vy;
-        
-        const groundY = game.groundY;
-        if (this.y + this.height > groundY) {
-            this.y = groundY - this.height;
-            this.vy = 0;
-            this.onGround = true;
-            this.airJumps = 0;
-            if (['jump', 'air_attack'].includes(this.state)) {
-                this.state = 'idle';
-            }
-        } else {
-            this.onGround = false;
-        }
-        
-        this.x = Math.max(40, Math.min(game.width - 40, this.x));
-        
-        if (!['dodge', 'skill_dash'].includes(this.state)) {
-            this.vx *= 0.88;
-        }
-    }
-    
-    handleGroundMovement(input, game) {
-        if (input.isDown('KeyA') || input.isDown('ArrowLeft')) {
-            this.vx = -this.moveSpeed;
-            this.facing = -1;
-            this.state = 'run';
-        } else if (input.isDown('KeyD') || input.isDown('ArrowRight')) {
-            this.vx = this.moveSpeed;
-            this.facing = 1;
-            this.state = 'run';
-        } else {
-            this.state = 'idle';
-        }
-        
-        if (input.isPressed('KeyK')) this.jump();
-        if (input.isPressed('KeyJ')) this.startAttack(game);
-        if ((input.isPressed('KeyL') || input.isPressed('ShiftLeft')) && this.dodgeCooldown <= 0) {
-            this.startDodge(game);
-        }
-        
-        if (input.isPressed('Digit1') && this.skills.spin.cd <= 0) this.startSpinSkill(game);
-        if (input.isPressed('Digit2') && this.skills.dash.cd <= 0) this.startDashSkill(game);
-        if (input.isPressed('Digit3') && this.skills.grab.cd <= 0) this.startGrabSkill(game);
-        
-        if (input.isPressed('KeyQ')) this.switchWeapon('DUAL_BLADE', game);
-        if (input.isPressed('KeyW')) this.switchWeapon('DUAL_DAGGER', game);
-        if (input.isPressed('KeyE')) this.switchWeapon('DUAL_HOOK', game);
-        
-        if (input.isPressed('KeyU')) this.tryFinisher(false, game);
-        if (input.isPressed('KeyI')) this.tryFinisher(true, game);
-    }
-    
-    handleAttack(input, game) {
-        this.vx *= 0.92;
-        
-        if (this.stateTimer === 2) {
-            this.performAttackHit(game);
-        }
-        
-        if (this.stateTimer > 5 && this.stateTimer < 14) {
-            if (input.isPressed('KeyJ')) {
-                this.attackCombo++;
-                this.stateTimer = 0;
-            }
-        }
-        
-        if ((input.isPressed('KeyL') || input.isPressed('ShiftLeft')) && this.dodgeCooldown <= 0) {
-            this.startDodge(game);
-            return;
-        }
-        if (input.isPressed('KeyK')) {
-            this.jump();
-            return;
-        }
-        
-        if (this.stateTimer > 16) {
-            this.state = 'idle';
-            this.attackCombo = 0;
-        }
-    }
-    
-    startSpinSkill(game) {
-        this.state = 'skill_spin';
-        this.stateTimer = 0;
-        this.skills.spin.cd = this.skills.spin.maxCd;
-        game.audio.playSkillSound();
-    }
-    
-    handleSpinSkill(game) {
-        this.vx = this.facing * 4;
-        
-        if (this.stateTimer % 5 === 0) {
-            const weapon = WEAPONS[this.currentWeapon];
-            for (const enemy of game.enemies) {
-                const dist = Math.abs(enemy.x - this.x);
-                if (dist < 100) {
-                    enemy.takeDamage(weapon.damage * 0.7, this.facing * 3);
-                    game.particles.emit(enemy.x, enemy.y - 30, weapon.color, 5, 4, 12);
-                    this.addCombo(1);
-                }
-            }
-            game.slash.add(this.x, this.y - 30, this.stateTimer * 0.5, 150, '#00ffff', 6);
-        }
-        
-        if (this.stateTimer > 35) this.state = 'idle';
-    }
-    
-    startDashSkill(game) {
-        this.state = 'skill_dash';
-        this.stateTimer = 0;
-        this.skills.dash.cd = this.skills.dash.maxCd;
-        this.isInvincible = true;
-        this.invincibleTimer = 15;
-        game.audio.playSkillSound();
-    }
-    
-    handleDashSkill(game) {
-        this.vx = this.facing * 28;
-        
-        if (this.stateTimer === 5) {
-            const weapon = WEAPONS[this.currentWeapon];
-            for (const enemy of game.enemies) {
-                const dist = Math.abs(enemy.x - this.x);
-                if (dist < 90) {
-                    enemy.takeDamage(weapon.damage * 2.5, this.facing * 15);
-                    game.slash.add(enemy.x, enemy.y - 30, this.facing > 0 ? 0 : Math.PI, 100, '#ff00ff', 10);
-                    game.spawnDamageNumber(enemy.x, enemy.y - 60, Math.floor(weapon.damage * 2.5), true);
-                    this.addCombo(2);
-                }
-            }
-            game.particles.emit(this.x, this.y - 30, '#ff00ff', 10, 6, 15);
-        }
-        
-        if (this.stateTimer > 12) {
-            this.state = 'idle';
-            this.vx *= 0.3;
-        }
-    }
-    
-    startGrabSkill(game) {
-        this.state = 'skill_grab';
-        this.stateTimer = 0;
-        this.skills.grab.cd = this.skills.grab.maxCd;
-        game.audio.playSkillSound();
-    }
-    
-    handleGrabSkill(game) {
-        if (this.stateTimer === 8) {
-            for (const enemy of game.enemies) {
-                const dist = Math.abs(enemy.x - this.x);
-                if (dist < 80 && !enemy.isBoss) {
-                    const damage = 200;
-                    enemy.takeDamage(damage, 0);
-                    enemy.vy = -22;
-                    enemy.vx = this.facing * 12;
-                    game.screenShake = 25;
-                    game.particles.emit(enemy.x, enemy.y, '#ff6600', 30, 12, 50);
-                    game.spawnDamageNumber(enemy.x, enemy.y - 60, damage, true);
-                    this.addCombo(5);
-                    break;
-                }
-            }
-        }
-        
-        if (this.stateTimer > 22) this.state = 'idle';
-    }
-    
-    handleAirState(input, game) {
-        if (input.isDown('KeyA') || input.isDown('ArrowLeft')) {
-            this.vx = -this.moveSpeed * 0.85;
-            this.facing = -1;
-        } else if (input.isDown('KeyD') || input.isDown('ArrowRight')) {
-            this.vx = this.moveSpeed * 0.85;
-            this.facing = 1;
-        }
-        
-        if (input.isPressed('KeyJ')) this.startAirAttack(game);
-        if ((input.isPressed('KeyL') || input.isPressed('ShiftLeft')) && this.dodgeCooldown <= 0) {
-            this.startDodge(game);
-        }
-    }
-    
-    handleDodge() {
-        this.isInvincible = true;
-        this.invincibleTimer = 10;
-        this.vx = this.facing * 20;
-        
-        if (this.stateTimer > 8) {
-            this.state = this.onGround ? 'idle' : 'jump';
-            this.vx *= 0.25;
-        }
-    }
-    
-    jump() {
-        if (this.onGround) {
-            this.vy = this.jumpPower;
-            this.state = 'jump';
-            this.onGround = false;
-        } else if (this.airJumps < 2) {
-            this.vy = this.jumpPower * 0.85;
-            this.airJumps++;
-        }
-    }
-    
-    startAttack(game) {
-        this.state = 'attack';
-        this.stateTimer = 0;
-    }
-    
-    startAirAttack(game) {
-        const weapon = WEAPONS[this.currentWeapon];
-        this.state = 'air_attack';
-        this.stateTimer = 0;
-        this.performAttackHit(game);
-        this.vy = Math.max(this.vy, -3);
-        this.vy *= 0.6;
-    }
-    
-    performAttackHit(game) {
-        const weapon = WEAPONS[this.currentWeapon];
-        const hitX = this.x + this.facing * weapon.range * 0.5;
-        
-        for (const enemy of game.enemies) {
-            const distX = Math.abs(enemy.x - hitX);
-            const distY = Math.abs(enemy.y - (this.y + this.height * 0.4));
-            
-            if (distX < weapon.range && distY < 60) {
-                let damage = weapon.damage;
-                let isBackstab = false;
-                
-                if (this.currentWeapon === 'DUAL_DAGGER') {
-                    const enemyFacingRight = enemy.vx > 0 || enemy.facing > 0;
-                    const attackFromBehind = (this.facing === 1 && !enemyFacingRight) || 
-                                            (this.facing === -1 && enemyFacingRight);
-                    if (attackFromBehind) {
-                        damage *= weapon.backstabBonus;
-                        isBackstab = true;
-                    }
-                }
-                
-                damage *= (1 + this.attackCombo * 0.12);
-                const killed = enemy.takeDamage(damage, this.facing * weapon.knockback);
-                
-                if (killed) {
-                    this.addCombo(5);
-                    game.onEnemyKilled();
-                } else {
-                    this.addCombo(1);
-                }
-                
-                const slashColor = isBackstab ? '#ff0066' : weapon.color;
-                game.slash.add(enemy.x, enemy.y - 25, this.facing > 0 ? 0 : Math.PI, 
-                    isBackstab ? 120 : 90, slashColor, 8);
-                game.particles.emit(enemy.x, enemy.y - 30, slashColor, isBackstab ? 10 : 6, 5, 15);
-                game.spawnDamageNumber(enemy.x, enemy.y - 60, Math.floor(damage), isBackstab);
-            }
-        }
-        
-        game.audio.playHitSound(this.combo);
-    }
-    
-    startDodge(game) {
-        this.state = 'dodge';
-        this.stateTimer = 0;
-        this.dodgeCooldown = 18;
-        game.particles.emit(this.x, this.y + 30, '#00ffff', 5, 4, 10);
-    }
-    
-    switchWeapon(type, game) {
-        if (this.currentWeapon === type) return;
-        this.currentWeapon = type;
-        game.particles.emit(this.x, this.y - 20, WEAPONS[type].color, 8, 3, 12);
-    }
-    
-    tryFinisher(isBig, game) {
-        const required = isBig ? 100 : 30;
-        if (this.combo >= required) {
-            this.executeFinisher(isBig, game);
-        }
-    }
-    
-    executeFinisher(isBig, game) {
-        if (isBig) {
-            game.screenShake = 50;
-            game.showFinisherText("ULTIMATE!!!");
-            game.slash.addUltimateSlash(this.x, this.y - 30);
-            game.particles.emit(this.x, this.y - 40, '#ff00ff', 60, 15, 80);
-            
-            for (const enemy of game.enemies) {
-                enemy.takeDamage(1000, 0);
-                enemy.vy = -30;
-                game.onEnemyKilled();
-            }
-        } else {
-            game.screenShake = 25;
-            game.showFinisherText("FINISHER!");
-            const weapon = WEAPONS[this.currentWeapon];
-            game.slash.add(this.x, this.y - 30, this.facing > 0 ? 0.3 : Math.PI - 0.3, 280, weapon.color, 18);
-            game.particles.emit(this.x, this.y - 40, weapon.color, 40, 10, 45);
-            
-            for (const enemy of game.enemies) {
-                const dist = Math.abs(enemy.x - this.x);
-                if (dist < 280) {
-                    enemy.takeDamage(180, this.facing * 18);
-                    game.spawnDamageNumber(enemy.x, enemy.y - 60, 180, true);
-                }
-            }
-        }
-        
-        game.audio.playFinisherSound(isBig);
-        this.combo = 0;
-    }
-    
-    addCombo(amount) {
-        this.combo += amount;
-        this.comboTimer = 0;
-    }
-    
-    takeDamage(damage) {
-        if (this.isInvincible) return;
-        this.health -= damage;
-        this.isInvincible = true;
-        this.invincibleTimer = 45;
-        if (this.health <= 0) this.health = 0;
-    }
-    
-    draw(ctx) {
-        ctx.save();
-        
-        if (this.isInvincible && Math.floor(this.animFrame / 3) % 2 === 0) {
-            ctx.globalAlpha = 0.4;
-        }
-        
-        ctx.translate(this.x, this.y + this.height);
-        ctx.scale(this.scale, this.scale);
-        
-        if (this.state === 'skill_dash') {
-            ctx.globalAlpha = 0.4;
-            ctx.fillStyle = '#ff00ff';
-            ctx.fillRect(-80, -60, 80, 60);
-            ctx.globalAlpha = this.isInvincible ? 0.4 : 1;
-        }
-        
-        if (this.state === 'dodge') {
-            ctx.globalAlpha = 0.3;
-            ctx.translate(-this.vx * 1.5 / this.scale, 0);
-            this.drawBody(ctx);
-            ctx.translate(this.vx * 1.5 / this.scale, 0);
-            ctx.globalAlpha = this.isInvincible ? 0.4 : 1;
-        }
-        
-        this.drawBody(ctx);
-        ctx.restore();
-    }
-    
-    drawBody(ctx) {
-        const weapon = WEAPONS[this.currentWeapon];
-        const isAttacking = ['attack', 'air_attack'].includes(this.state);
-        
-        const bobOffset = this.state === 'run' ? Math.sin(this.animFrame * 0.3) * 3 : 
-                         this.state === 'idle' ? Math.sin(this.animFrame * 0.1) * 1 : 0;
-        
-        // 腿部
-        if (this.state === 'run' || this.state === 'skill_spin') {
-            const legSwing = Math.sin(this.animFrame * 0.5) * (this.state === 'skill_spin' ? 1.5 : 1);
-            ctx.strokeStyle = '#1a1a2e';
-            ctx.lineWidth = 10;
-            ctx.lineCap = 'round';
-            
-            ctx.beginPath();
-            ctx.moveTo(-10, -15);
-            ctx.lineTo(-14 + legSwing * 10, 0);
-            ctx.stroke();
-            
-            ctx.beginPath();
-            ctx.moveTo(10, -15);
-            ctx.lineTo(14 - legSwing * 10, 0);
-            ctx.stroke();
-        } else {
-            ctx.strokeStyle = '#1a1a2e';
-            ctx.lineWidth = 10;
-            ctx.beginPath();
-            ctx.moveTo(-10, -15);
-            ctx.lineTo(-12, 0);
-            ctx.moveTo(10, -15);
-            ctx.lineTo(12, 0);
-            ctx.stroke();
-        }
-        
-        // 身体
-        const bodyY = -40 + bobOffset;
-        const grad = ctx.createLinearGradient(-16, bodyY, 16, bodyY + 38);
-        grad.addColorStop(0, '#3d3d3d');
-        grad.addColorStop(1, '#1a1a1a');
-        ctx.fillStyle = grad;
-        ctx.fillRect(-16, bodyY, 32, 38);
-        
-        ctx.strokeStyle = weapon.color;
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = 0.5;
-        ctx.strokeRect(-12, bodyY + 6, 24, 26);
-        ctx.globalAlpha = 1;
-        
-        // ===== 头像（放大版）=====
-        const headY = -65 + bobOffset;
-        const hasAvatar = this.avatarImg && this.avatarImg.complete && this.avatarImg.naturalWidth > 0;
-        
-        if (hasAvatar) {
-            // 头像圆圈背景
-            ctx.beginPath();
-            ctx.arc(0, headY, 16, 0, Math.PI * 2);
-            ctx.fillStyle = '#000';
-            ctx.fill();
-            ctx.strokeStyle = weapon.color;
-            ctx.lineWidth = 3;
-            ctx.stroke();
-            
-            // 裁剪绘制头像
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(0, headY, 14, 0, Math.PI * 2);
-            ctx.clip();
-            try {
-                ctx.drawImage(this.avatarImg, -14, headY - 14, 28, 28);
-            } catch (e) {
-                ctx.fillStyle = weapon.color;
-                ctx.fillRect(-14, headY - 14, 28, 28);
-            }
-            ctx.restore();
-            
-            // 发光边框
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = weapon.color;
-            ctx.strokeStyle = weapon.color;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, headY, 16, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-        } else {
-            // 备用头像
-            ctx.fillStyle = '#2d3436';
-            ctx.beginPath();
-            ctx.arc(0, headY, 15, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.fillStyle = '#1a1a2e';
-            ctx.beginPath();
-            ctx.arc(0, headY - 2, 16, Math.PI, 0);
-            ctx.fill();
-            
-            ctx.fillStyle = '#f5d0b0';
-            ctx.beginPath();
-            ctx.arc(0, headY + 2, 12, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.fillStyle = '#000';
-            const eyeDir = this.facing > 0 ? 4 : -4;
-            ctx.beginPath();
-            ctx.arc(eyeDir, headY + 2, 3, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.strokeStyle = '#c0392b';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, headY + 5, 6, 0.2, Math.PI - 0.2);
-            ctx.stroke();
-            
-            ctx.strokeStyle = weapon.color;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, headY, 15, 0, Math.PI * 2);
-            ctx.stroke();
-        }
-        
-        // 围巾
-        if (['dodge', 'jump', 'skill_dash'].includes(this.state)) {
-            ctx.strokeStyle = weapon.color;
-            ctx.lineWidth = 5;
-            ctx.globalAlpha = 0.6;
-            ctx.beginPath();
-            ctx.moveTo(0, bodyY + 6);
-            ctx.quadraticCurveTo(-this.facing * 22, bodyY + 14, -this.facing * 35, bodyY + 32);
-            ctx.stroke();
-            ctx.globalAlpha = 1;
-        }
-        
-        // 武器
-        ctx.translate(0, bodyY + 18);
-        this.drawWeapon(ctx, weapon, isAttacking);
-    }
-    
-    drawWeapon(ctx, weapon, isAttacking) {
-        const swing = isAttacking ? Math.sin(this.stateTimer * 0.4) * 0.8 : 0;
-        const baseAngle = this.facing > 0 ? 0 : Math.PI;
-        
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = weapon.color;
-        
-        if (this.currentWeapon === 'DUAL_BLADE') {
-            // 左刀
-            ctx.save();
-            ctx.rotate(baseAngle + swing - 0.4);
-            ctx.fillStyle = '#444';
-            ctx.fillRect(-28, -5, 22, 10);
-            ctx.fillStyle = '#666';
-            ctx.fillRect(-10, -8, 8, 16);
-            const bladeGrad = ctx.createLinearGradient(0, -6, 0, 6);
-            bladeGrad.addColorStop(0, '#e8e8e8');
-            bladeGrad.addColorStop(0.5, '#fff');
-            bladeGrad.addColorStop(1, '#a0a0a0');
-            ctx.fillStyle = bladeGrad;
-            ctx.beginPath();
-            ctx.moveTo(-6, -6);
-            ctx.lineTo(55, 0);
-            ctx.lineTo(-6, 6);
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle = weapon.color;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.restore();
-            
-            // 右刀
-            ctx.save();
-            ctx.rotate(baseAngle - swing + 0.4);
-            ctx.fillStyle = '#444';
-            ctx.fillRect(-28, -5, 22, 10);
-            ctx.fillStyle = '#666';
-            ctx.fillRect(-10, -8, 8, 16);
-            ctx.fillStyle = bladeGrad;
-            ctx.beginPath();
-            ctx.moveTo(-6, -6);
-            ctx.lineTo(55, 0);
-            ctx.lineTo(-6, 6);
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle = weapon.color;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.restore();
-            
-        } else if (this.currentWeapon === 'DUAL_DAGGER') {
-            const color = this.combo > 40 ? '#ff0044' : weapon.color;
-            ctx.shadowColor = color;
-            
-            // 左匕
-            ctx.save();
-            ctx.rotate(baseAngle - 0.5);
-            ctx.fillStyle = '#333';
-            ctx.fillRect(-16, -3, 12, 6);
-            ctx.fillStyle = '#ccc';
-            ctx.beginPath();
-            ctx.moveTo(-4, -4);
-            ctx.lineTo(32, 0);
-            ctx.lineTo(-4, 4);
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.fillStyle = color;
-            ctx.globalAlpha = 0.7;
-            ctx.fillRect(6, -1, 22, 2);
-            ctx.globalAlpha = 1;
-            ctx.restore();
-            
-            // 右匕
-            ctx.save();
-            ctx.rotate(baseAngle + 0.5);
-            ctx.fillStyle = '#333';
-            ctx.fillRect(-16, -3, 12, 6);
-            ctx.fillStyle = '#ccc';
-            ctx.beginPath();
-            ctx.moveTo(-4, -4);
-            ctx.lineTo(32, 0);
-            ctx.lineTo(-4, 4);
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.fillStyle = color;
-            ctx.globalAlpha = 0.7;
-            ctx.fillRect(6, -1, 22, 2);
-            ctx.globalAlpha = 1;
-            ctx.restore();
-            
-        } else if (this.currentWeapon === 'DUAL_HOOK') {
-            const extend = isAttacking ? Math.sin(this.stateTimer * 0.4) * 25 : 0;
-            
-            // 左钩
-            ctx.save();
-            ctx.rotate(baseAngle - 0.6);
-            ctx.translate(extend, 0);
-            ctx.strokeStyle = '#666';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            for (let i = 0; i < 6; i++) {
-                ctx.arc(-18 + i*8, (i%2===0?-4:4), 4, 0, Math.PI*2);
-            }
-            ctx.stroke();
-            ctx.strokeStyle = weapon.color;
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.arc(42, 0, 16, 0.8, 5.5, true);
-            ctx.stroke();
-            ctx.fillStyle = weapon.color;
-            ctx.beginPath();
-            ctx.moveTo(54, 9);
-            ctx.lineTo(62, 16);
-            ctx.lineTo(52, 11);
-            ctx.fill();
-            ctx.restore();
-            
-            // 右钩
-            ctx.save();
-            ctx.rotate(baseAngle + 0.6);
-            ctx.translate(extend, 0);
-            ctx.strokeStyle = '#666';
-            ctx.lineWidth = 3;
-            for (let i = 0; i < 6; i++) {
-                ctx.arc(-18 + i*8, (i%2===0?4:-4), 4, 0, Math.PI*2);
-            }
-            ctx.stroke();
-            ctx.strokeStyle = weapon.color;
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.arc(42, 0, 16, -0.8, -5.5);
-            ctx.stroke();
-            ctx.fillStyle = weapon.color;
-            ctx.beginPath();
-            ctx.moveTo(54, -9);
-            ctx.lineTo(62, -16);
-            ctx.lineTo(52, -11);
-            ctx.fill();
-            ctx.restore();
-        }
-        
-        ctx.shadowBlur = 0;
-    }
-}
+              this.handleDodge()
+              break
+          }
 
-// ==================== 敌人类 ====================
-class Enemy {
-    constructor(x, y, type, level) {
-        this.x = x;
-        this.y = y;
-        this.type = type;
-        this.level = level;
-        // 根据关卡增大敌人
-        const scale = 1 + level * 0.15;
-        this.width = 50 * scale;
-        this.height = 60 * scale;
-        
-        this.maxHealth = (type === 'elite' ? 350 : 140) * (1 + level * 0.3);
-        this.health = this.maxHealth;
-        this.damage = (type === 'elite' ? 22 : 12) * (1 + level * 0.2);
-        
-        this.vx = 0;
-        this.vy = 0;
-        this.facing = -1;
-        this.moveSpeed = (type === 'elite' ? 1.8 : 2.8) * (1 + level * 0.1);
-        
-        this.state = 'idle';
-        this.stateTimer = 0;
-        this.hitStun = 0;
-        this.animFrame = 0;
-        
-        this.colors = this.generateColors(level);
-    }
-    
-    generateColors(level) {
-        if (this.type === 'elite') {
-            return { body: '#6c5ce7', dark: '#4834d4', accent: '#a29bfe' };
+          this.x += this.vx
+          this.y += this.vy
+
+          const groundY = game.groundY
+          if (this.y + this.height > groundY) {
+            this.y = groundY - this.height
+            this.vy = 0
+            this.onGround = true
+            this.airJumps = 0
+            if (['jump', 'air_attack'].includes(this.state)) {
+              this.state = 'idle'
+            }
+          } else {
+            this.onGround = false
+          }
+
+          this.x = Math.max(40, Math.min(game.width - 40, this.x))
+
+          if (!['dodge', 'skill_dash'].includes(this.state)) {
+            this.vx *= 0.88
+          }
         }
-        const colors = [
+
+        handleGroundMovement(input, game) {
+          if (input.isDown('KeyA') || input.isDown('ArrowLeft')) {
+            this.vx = -this.moveSpeed
+            this.facing = -1
+            this.state = 'run'
+          } else if (input.isDown('KeyD') || input.isDown('ArrowRight')) {
+            this.vx = this.moveSpeed
+            this.facing = 1
+            this.state = 'run'
+          } else {
+            this.state = 'idle'
+          }
+
+          if (input.isPressed('KeyK')) this.jump()
+          if (input.isPressed('KeyJ')) this.startAttack(game)
+          if (
+            (input.isPressed('KeyL') || input.isPressed('ShiftLeft')) &&
+            this.dodgeCooldown <= 0
+          ) {
+            this.startDodge(game)
+          }
+
+          if (input.isPressed('Digit1') && this.skills.spin.cd <= 0)
+            this.startSpinSkill(game)
+          if (input.isPressed('Digit2') && this.skills.dash.cd <= 0)
+            this.startDashSkill(game)
+          if (input.isPressed('Digit3') && this.skills.grab.cd <= 0)
+            this.startGrabSkill(game)
+
+          if (input.isPressed('KeyQ')) this.switchWeapon('DUAL_BLADE', game)
+          if (input.isPressed('KeyW')) this.switchWeapon('DUAL_DAGGER', game)
+          if (input.isPressed('KeyE')) this.switchWeapon('DUAL_HOOK', game)
+
+          if (input.isPressed('KeyU')) this.tryFinisher(false, game)
+          if (input.isPressed('KeyI')) this.tryFinisher(true, game)
+        }
+
+        handleAttack(input, game) {
+          this.vx *= 0.92
+
+          if (this.stateTimer === 2) {
+            this.performAttackHit(game)
+          }
+
+          if (this.stateTimer > 5 && this.stateTimer < 14) {
+            if (input.isPressed('KeyJ')) {
+              this.attackCombo++
+              this.stateTimer = 0
+            }
+          }
+
+          if (
+            (input.isPressed('KeyL') || input.isPressed('ShiftLeft')) &&
+            this.dodgeCooldown <= 0
+          ) {
+            this.startDodge(game)
+            return
+          }
+          if (input.isPressed('KeyK')) {
+            this.jump()
+            return
+          }
+
+          if (this.stateTimer > 16) {
+            this.state = 'idle'
+            this.attackCombo = 0
+          }
+        }
+
+        startSpinSkill(game) {
+          this.state = 'skill_spin'
+          this.stateTimer = 0
+          this.skills.spin.cd = this.skills.spin.maxCd
+          game.audio.playSkillSound()
+        }
+
+        handleSpinSkill(game) {
+          this.vx = this.facing * 4
+
+          if (this.stateTimer % 5 === 0) {
+            const weapon = WEAPONS[this.currentWeapon]
+            for (const enemy of game.enemies) {
+              const dist = Math.abs(enemy.x - this.x)
+              if (dist < 100) {
+                enemy.takeDamage(weapon.damage * 0.7, this.facing * 3)
+                game.particles.emit(
+                  enemy.x,
+                  enemy.y - 30,
+                  weapon.color,
+                  5,
+                  4,
+                  12,
+                )
+                this.addCombo(1)
+              }
+            }
+            game.slash.add(
+              this.x,
+              this.y - 30,
+              this.stateTimer * 0.5,
+              150,
+              '#00ffff',
+              6,
+            )
+          }
+
+          if (this.stateTimer > 35) this.state = 'idle'
+        }
+
+        startDashSkill(game) {
+          this.state = 'skill_dash'
+          this.stateTimer = 0
+          this.skills.dash.cd = this.skills.dash.maxCd
+          this.isInvincible = true
+          this.invincibleTimer = 15
+          game.audio.playSkillSound()
+        }
+
+        handleDashSkill(game) {
+          this.vx = this.facing * 28
+
+          if (this.stateTimer === 5) {
+            const weapon = WEAPONS[this.currentWeapon]
+            for (const enemy of game.enemies) {
+              const dist = Math.abs(enemy.x - this.x)
+              if (dist < 90) {
+                enemy.takeDamage(weapon.damage * 2.5, this.facing * 15)
+                game.slash.add(
+                  enemy.x,
+                  enemy.y - 30,
+                  this.facing > 0 ? 0 : Math.PI,
+                  100,
+                  '#ff00ff',
+                  10,
+                )
+                game.spawnDamageNumber(
+                  enemy.x,
+                  enemy.y - 60,
+                  Math.floor(weapon.damage * 2.5),
+                  true,
+                )
+                this.addCombo(2)
+              }
+            }
+            game.particles.emit(this.x, this.y - 30, '#ff00ff', 10, 6, 15)
+          }
+
+          if (this.stateTimer > 12) {
+            this.state = 'idle'
+            this.vx *= 0.3
+          }
+        }
+
+        startGrabSkill(game) {
+          this.state = 'skill_grab'
+          this.stateTimer = 0
+          this.skills.grab.cd = this.skills.grab.maxCd
+          game.audio.playSkillSound()
+        }
+
+        handleGrabSkill(game) {
+          if (this.stateTimer === 8) {
+            for (const enemy of game.enemies) {
+              const dist = Math.abs(enemy.x - this.x)
+              if (dist < 80 && !enemy.isBoss) {
+                const damage = 200
+                enemy.takeDamage(damage, 0)
+                enemy.vy = -22
+                enemy.vx = this.facing * 12
+                game.screenShake = 25
+                game.particles.emit(enemy.x, enemy.y, '#ff6600', 30, 12, 50)
+                game.spawnDamageNumber(enemy.x, enemy.y - 60, damage, true)
+                this.addCombo(5)
+                break
+              }
+            }
+          }
+
+          if (this.stateTimer > 22) this.state = 'idle'
+        }
+
+        handleAirState(input, game) {
+          if (input.isDown('KeyA') || input.isDown('ArrowLeft')) {
+            this.vx = -this.moveSpeed * 0.85
+            this.facing = -1
+          } else if (input.isDown('KeyD') || input.isDown('ArrowRight')) {
+            this.vx = this.moveSpeed * 0.85
+            this.facing = 1
+          }
+
+          if (input.isPressed('KeyJ')) this.startAirAttack(game)
+          if (
+            (input.isPressed('KeyL') || input.isPressed('ShiftLeft')) &&
+            this.dodgeCooldown <= 0
+          ) {
+            this.startDodge(game)
+          }
+        }
+
+        handleDodge() {
+          this.isInvincible = true
+          this.invincibleTimer = 10
+          this.vx = this.facing * 20
+
+          if (this.stateTimer > 8) {
+            this.state = this.onGround ? 'idle' : 'jump'
+            this.vx *= 0.25
+          }
+        }
+
+        jump() {
+          if (this.onGround) {
+            this.vy = this.jumpPower
+            this.state = 'jump'
+            this.onGround = false
+          } else if (this.airJumps < 2) {
+            this.vy = this.jumpPower * 0.85
+            this.airJumps++
+          }
+        }
+
+        startAttack(game) {
+          this.state = 'attack'
+          this.stateTimer = 0
+        }
+
+        startAirAttack(game) {
+          const weapon = WEAPONS[this.currentWeapon]
+          this.state = 'air_attack'
+          this.stateTimer = 0
+          this.performAttackHit(game)
+          this.vy = Math.max(this.vy, -3)
+          this.vy *= 0.6
+        }
+
+        performAttackHit(game) {
+          const weapon = WEAPONS[this.currentWeapon]
+          const hitX = this.x + this.facing * weapon.range * 0.5
+
+          for (const enemy of game.enemies) {
+            const distX = Math.abs(enemy.x - hitX)
+            const distY = Math.abs(enemy.y - (this.y + this.height * 0.4))
+
+            if (distX < weapon.range && distY < 60) {
+              let damage = weapon.damage
+              let isBackstab = false
+
+              if (this.currentWeapon === 'DUAL_DAGGER') {
+                const enemyFacingRight = enemy.vx > 0 || enemy.facing > 0
+                const attackFromBehind =
+                  (this.facing === 1 && !enemyFacingRight) ||
+                  (this.facing === -1 && enemyFacingRight)
+                if (attackFromBehind) {
+                  damage *= weapon.backstabBonus
+                  isBackstab = true
+                }
+              }
+
+              damage *= 1 + this.attackCombo * 0.12
+              const killed = enemy.takeDamage(
+                damage,
+                this.facing * weapon.knockback,
+              )
+
+              if (killed) {
+                this.addCombo(5)
+                game.onEnemyKilled()
+              } else {
+                this.addCombo(1)
+              }
+
+              const slashColor = isBackstab ? '#ff0066' : weapon.color
+              game.slash.add(
+                enemy.x,
+                enemy.y - 25,
+                this.facing > 0 ? 0 : Math.PI,
+                isBackstab ? 120 : 90,
+                slashColor,
+                8,
+              )
+              game.particles.emit(
+                enemy.x,
+                enemy.y - 30,
+                slashColor,
+                isBackstab ? 10 : 6,
+                5,
+                15,
+              )
+              game.spawnDamageNumber(
+                enemy.x,
+                enemy.y - 60,
+                Math.floor(damage),
+                isBackstab,
+              )
+            }
+          }
+
+          game.audio.playHitSound(this.combo)
+        }
+
+        startDodge(game) {
+          this.state = 'dodge'
+          this.stateTimer = 0
+          this.dodgeCooldown = 18
+          game.particles.emit(this.x, this.y + 30, '#00ffff', 5, 4, 10)
+        }
+
+        switchWeapon(type, game) {
+          if (this.currentWeapon === type) return
+          this.currentWeapon = type
+          game.particles.emit(
+            this.x,
+            this.y - 20,
+            WEAPONS[type].color,
+            8,
+            3,
+            12,
+          )
+        }
+
+        tryFinisher(isBig, game) {
+          const required = isBig ? 100 : 30
+          if (this.combo >= required) {
+            this.executeFinisher(isBig, game)
+          }
+        }
+
+        executeFinisher(isBig, game) {
+          if (isBig) {
+            game.screenShake = 50
+            game.showFinisherText('ULTIMATE!!!')
+            game.slash.addUltimateSlash(this.x, this.y - 30)
+            game.particles.emit(this.x, this.y - 40, '#ff00ff', 60, 15, 80)
+
+            for (const enemy of game.enemies) {
+              enemy.takeDamage(1000, 0)
+              enemy.vy = -30
+              game.onEnemyKilled()
+            }
+          } else {
+            game.screenShake = 25
+            game.showFinisherText('FINISHER!')
+            const weapon = WEAPONS[this.currentWeapon]
+            game.slash.add(
+              this.x,
+              this.y - 30,
+              this.facing > 0 ? 0.3 : Math.PI - 0.3,
+              280,
+              weapon.color,
+              18,
+            )
+            game.particles.emit(this.x, this.y - 40, weapon.color, 40, 10, 45)
+
+            for (const enemy of game.enemies) {
+              const dist = Math.abs(enemy.x - this.x)
+              if (dist < 280) {
+                enemy.takeDamage(180, this.facing * 18)
+                game.spawnDamageNumber(enemy.x, enemy.y - 60, 180, true)
+              }
+            }
+          }
+
+          game.audio.playFinisherSound(isBig)
+          this.combo = 0
+        }
+
+        addCombo(amount) {
+          this.combo += amount
+          this.comboTimer = 0
+        }
+
+        takeDamage(damage) {
+          if (this.isInvincible) return
+          this.health -= damage
+          this.isInvincible = true
+          this.invincibleTimer = 45
+          if (this.health <= 0) this.health = 0
+        }
+
+        draw(ctx) {
+          ctx.save()
+
+          if (this.isInvincible && Math.floor(this.animFrame / 3) % 2 === 0) {
+            ctx.globalAlpha = 0.4
+          }
+
+          ctx.translate(this.x, this.y + this.height)
+          ctx.scale(this.scale, this.scale)
+
+          if (this.state === 'skill_dash') {
+            ctx.globalAlpha = 0.4
+            ctx.fillStyle = '#ff00ff'
+            ctx.fillRect(-80, -60, 80, 60)
+            ctx.globalAlpha = this.isInvincible ? 0.4 : 1
+          }
+
+          if (this.state === 'dodge') {
+            ctx.globalAlpha = 0.3
+            ctx.translate((-this.vx * 1.5) / this.scale, 0)
+            this.drawBody(ctx)
+            ctx.translate((this.vx * 1.5) / this.scale, 0)
+            ctx.globalAlpha = this.isInvincible ? 0.4 : 1
+          }
+
+          this.drawBody(ctx)
+          ctx.restore()
+        }
+
+        drawBody(ctx) {
+          const weapon = WEAPONS[this.currentWeapon]
+          const isAttacking = ['attack', 'air_attack'].includes(this.state)
+
+          const bobOffset =
+            this.state === 'run'
+              ? Math.sin(this.animFrame * 0.3) * 3
+              : this.state === 'idle'
+                ? Math.sin(this.animFrame * 0.1) * 1
+                : 0
+
+          // 腿部
+          if (this.state === 'run' || this.state === 'skill_spin') {
+            const legSwing =
+              Math.sin(this.animFrame * 0.5) *
+              (this.state === 'skill_spin' ? 1.5 : 1)
+            ctx.strokeStyle = '#1a1a2e'
+            ctx.lineWidth = 10
+            ctx.lineCap = 'round'
+
+            ctx.beginPath()
+            ctx.moveTo(-10, -15)
+            ctx.lineTo(-14 + legSwing * 10, 0)
+            ctx.stroke()
+
+            ctx.beginPath()
+            ctx.moveTo(10, -15)
+            ctx.lineTo(14 - legSwing * 10, 0)
+            ctx.stroke()
+          } else {
+            ctx.strokeStyle = '#1a1a2e'
+            ctx.lineWidth = 10
+            ctx.beginPath()
+            ctx.moveTo(-10, -15)
+            ctx.lineTo(-12, 0)
+            ctx.moveTo(10, -15)
+            ctx.lineTo(12, 0)
+            ctx.stroke()
+          }
+
+          // 身体
+          const bodyY = -40 + bobOffset
+          const grad = ctx.createLinearGradient(-16, bodyY, 16, bodyY + 38)
+          grad.addColorStop(0, '#3d3d3d')
+          grad.addColorStop(1, '#1a1a1a')
+          ctx.fillStyle = grad
+          ctx.fillRect(-16, bodyY, 32, 38)
+
+          ctx.strokeStyle = weapon.color
+          ctx.lineWidth = 2
+          ctx.globalAlpha = 0.5
+          ctx.strokeRect(-12, bodyY + 6, 24, 26)
+          ctx.globalAlpha = 1
+
+          // ===== 头像（放大版）=====
+          const headY = -65 + bobOffset
+          const hasAvatar =
+            this.avatarImg &&
+            this.avatarImg.complete &&
+            this.avatarImg.naturalWidth > 0
+
+          if (hasAvatar) {
+            // 头像圆圈背景
+            ctx.beginPath()
+            ctx.arc(0, headY, 16, 0, Math.PI * 2)
+            ctx.fillStyle = '#000'
+            ctx.fill()
+            ctx.strokeStyle = weapon.color
+            ctx.lineWidth = 3
+            ctx.stroke()
+
+            // 裁剪绘制头像
+            ctx.save()
+            ctx.beginPath()
+            ctx.arc(0, headY, 14, 0, Math.PI * 2)
+            ctx.clip()
+            try {
+              ctx.drawImage(this.avatarImg, -14, headY - 14, 28, 28)
+            } catch (e) {
+              ctx.fillStyle = weapon.color
+              ctx.fillRect(-14, headY - 14, 28, 28)
+            }
+            ctx.restore()
+
+            // 发光边框
+            ctx.shadowBlur = 20
+            ctx.shadowColor = weapon.color
+            ctx.strokeStyle = weapon.color
+            ctx.lineWidth = 2
+            ctx.beginPath()
+            ctx.arc(0, headY, 16, 0, Math.PI * 2)
+            ctx.stroke()
+            ctx.shadowBlur = 0
+          } else {
+            // 备用头像
+            ctx.fillStyle = '#2d3436'
+            ctx.beginPath()
+            ctx.arc(0, headY, 15, 0, Math.PI * 2)
+            ctx.fill()
+
+            ctx.fillStyle = '#1a1a2e'
+            ctx.beginPath()
+            ctx.arc(0, headY - 2, 16, Math.PI, 0)
+            ctx.fill()
+
+            ctx.fillStyle = '#f5d0b0'
+            ctx.beginPath()
+            ctx.arc(0, headY + 2, 12, 0, Math.PI * 2)
+            ctx.fill()
+
+            ctx.fillStyle = '#000'
+            const eyeDir = this.facing > 0 ? 4 : -4
+            ctx.beginPath()
+            ctx.arc(eyeDir, headY + 2, 3, 0, Math.PI * 2)
+            ctx.fill()
+
+            ctx.strokeStyle = '#c0392b'
+            ctx.lineWidth = 2
+            ctx.beginPath()
+            ctx.arc(0, headY + 5, 6, 0.2, Math.PI - 0.2)
+            ctx.stroke()
+
+            ctx.strokeStyle = weapon.color
+            ctx.lineWidth = 2
+            ctx.beginPath()
+            ctx.arc(0, headY, 15, 0, Math.PI * 2)
+            ctx.stroke()
+          }
+
+          // 围巾
+          if (['dodge', 'jump', 'skill_dash'].includes(this.state)) {
+            ctx.strokeStyle = weapon.color
+            ctx.lineWidth = 5
+            ctx.globalAlpha = 0.6
+            ctx.beginPath()
+            ctx.moveTo(0, bodyY + 6)
+            ctx.quadraticCurveTo(
+              -this.facing * 22,
+              bodyY + 14,
+              -this.facing * 35,
+              bodyY + 32,
+            )
+            ctx.stroke()
+            ctx.globalAlpha = 1
+          }
+
+          // 武器
+          ctx.translate(0, bodyY + 18)
+          this.drawWeapon(ctx, weapon, isAttacking)
+        }
+
+        drawWeapon(ctx, weapon, isAttacking) {
+          const swing = isAttacking ? Math.sin(this.stateTimer * 0.4) * 0.8 : 0
+          const baseAngle = this.facing > 0 ? 0 : Math.PI
+
+          ctx.shadowBlur = 20
+          ctx.shadowColor = weapon.color
+
+          if (this.currentWeapon === 'DUAL_BLADE') {
+            // 左刀
+            ctx.save()
+            ctx.rotate(baseAngle + swing - 0.4)
+            ctx.fillStyle = '#444'
+            ctx.fillRect(-28, -5, 22, 10)
+            ctx.fillStyle = '#666'
+            ctx.fillRect(-10, -8, 8, 16)
+            const bladeGrad = ctx.createLinearGradient(0, -6, 0, 6)
+            bladeGrad.addColorStop(0, '#e8e8e8')
+            bladeGrad.addColorStop(0.5, '#fff')
+            bladeGrad.addColorStop(1, '#a0a0a0')
+            ctx.fillStyle = bladeGrad
+            ctx.beginPath()
+            ctx.moveTo(-6, -6)
+            ctx.lineTo(55, 0)
+            ctx.lineTo(-6, 6)
+            ctx.closePath()
+            ctx.fill()
+            ctx.strokeStyle = weapon.color
+            ctx.lineWidth = 2
+            ctx.stroke()
+            ctx.restore()
+
+            // 右刀
+            ctx.save()
+            ctx.rotate(baseAngle - swing + 0.4)
+            ctx.fillStyle = '#444'
+            ctx.fillRect(-28, -5, 22, 10)
+            ctx.fillStyle = '#666'
+            ctx.fillRect(-10, -8, 8, 16)
+            ctx.fillStyle = bladeGrad
+            ctx.beginPath()
+            ctx.moveTo(-6, -6)
+            ctx.lineTo(55, 0)
+            ctx.lineTo(-6, 6)
+            ctx.closePath()
+            ctx.fill()
+            ctx.strokeStyle = weapon.color
+            ctx.lineWidth = 2
+            ctx.stroke()
+            ctx.restore()
+          } else if (this.currentWeapon === 'DUAL_DAGGER') {
+            const color = this.combo > 40 ? '#ff0044' : weapon.color
+            ctx.shadowColor = color
+
+            // 左匕
+            ctx.save()
+            ctx.rotate(baseAngle - 0.5)
+            ctx.fillStyle = '#333'
+            ctx.fillRect(-16, -3, 12, 6)
+            ctx.fillStyle = '#ccc'
+            ctx.beginPath()
+            ctx.moveTo(-4, -4)
+            ctx.lineTo(32, 0)
+            ctx.lineTo(-4, 4)
+            ctx.closePath()
+            ctx.fill()
+            ctx.strokeStyle = color
+            ctx.lineWidth = 2
+            ctx.stroke()
+            ctx.fillStyle = color
+            ctx.globalAlpha = 0.7
+            ctx.fillRect(6, -1, 22, 2)
+            ctx.globalAlpha = 1
+            ctx.restore()
+
+            // 右匕
+            ctx.save()
+            ctx.rotate(baseAngle + 0.5)
+            ctx.fillStyle = '#333'
+            ctx.fillRect(-16, -3, 12, 6)
+            ctx.fillStyle = '#ccc'
+            ctx.beginPath()
+            ctx.moveTo(-4, -4)
+            ctx.lineTo(32, 0)
+            ctx.lineTo(-4, 4)
+            ctx.closePath()
+            ctx.fill()
+            ctx.strokeStyle = color
+            ctx.lineWidth = 2
+            ctx.stroke()
+            ctx.fillStyle = color
+            ctx.globalAlpha = 0.7
+            ctx.fillRect(6, -1, 22, 2)
+            ctx.globalAlpha = 1
+            ctx.restore()
+          } else if (this.currentWeapon === 'DUAL_HOOK') {
+            const extend = isAttacking
+              ? Math.sin(this.stateTimer * 0.4) * 25
+              : 0
+
+            // 左钩
+            ctx.save()
+            ctx.rotate(baseAngle - 0.6)
+            ctx.translate(extend, 0)
+            ctx.strokeStyle = '#666'
+            ctx.lineWidth = 3
+            ctx.beginPath()
+            for (let i = 0; i < 6; i++) {
+              ctx.arc(-18 + i * 8, i % 2 === 0 ? -4 : 4, 4, 0, Math.PI * 2)
+            }
+            ctx.stroke()
+            ctx.strokeStyle = weapon.color
+            ctx.lineWidth = 4
+            ctx.beginPath()
+            ctx.arc(42, 0, 16, 0.8, 5.5, true)
+            ctx.stroke()
+            ctx.fillStyle = weapon.color
+            ctx.beginPath()
+            ctx.moveTo(54, 9)
+            ctx.lineTo(62, 16)
+            ctx.lineTo(52, 11)
+            ctx.fill()
+            ctx.restore()
+
+            // 右钩
+            ctx.save()
+            ctx.rotate(baseAngle + 0.6)
+            ctx.translate(extend, 0)
+            ctx.strokeStyle = '#666'
+            ctx.lineWidth = 3
+            for (let i = 0; i < 6; i++) {
+              ctx.arc(-18 + i * 8, i % 2 === 0 ? 4 : -4, 4, 0, Math.PI * 2)
+            }
+            ctx.stroke()
+            ctx.strokeStyle = weapon.color
+            ctx.lineWidth = 4
+            ctx.beginPath()
+            ctx.arc(42, 0, 16, -0.8, -5.5)
+            ctx.stroke()
+            ctx.fillStyle = weapon.color
+            ctx.beginPath()
+            ctx.moveTo(54, -9)
+            ctx.lineTo(62, -16)
+            ctx.lineTo(52, -11)
+            ctx.fill()
+            ctx.restore()
+          }
+
+          ctx.shadowBlur = 0
+        }
+      }
+
+      // ==================== 敌人类 ====================
+      class Enemy {
+        constructor(x, y, type, level) {
+          this.x = x
+          this.y = y
+          this.type = type
+          this.level = level
+          // 根据关卡增大敌人
+          const scale = 1 + level * 0.15
+          this.width = 50 * scale
+          this.height = 60 * scale
+
+          this.maxHealth = (type === 'elite' ? 350 : 140) * (1 + level * 0.3)
+          this.health = this.maxHealth
+          this.damage = (type === 'elite' ? 22 : 12) * (1 + level * 0.2)
+
+          this.vx = 0
+          this.vy = 0
+          this.facing = -1
+          this.moveSpeed = (type === 'elite' ? 1.8 : 2.8) * (1 + level * 0.1)
+
+          this.state = 'idle'
+          this.stateTimer = 0
+          this.hitStun = 0
+          this.animFrame = 0
+
+          this.colors = this.generateColors(level)
+        }
+
+        generateColors(level) {
+          if (this.type === 'elite') {
+            return { body: '#6c5ce7', dark: '#4834d4', accent: '#a29bfe' }
+          }
+          const colors = [
             { body: '#e74c3c', dark: '#c0392b', accent: '#ff7675' },
             { body: '#e67e22', dark: '#d35400', accent: '#f39c12' },
-            { body: '#8e44ad', dark: '#6c3483', accent: '#bb8fce' }
-        ];
-        return colors[level % 3];
-    }
-    
-    update(player, game) {
-        this.animFrame++;
-        
-        if (this.hitStun > 0) {
-            this.hitStun--;
-            this.vy += 0.6;
-            this.x += this.vx;
-            this.y += this.vy;
+            { body: '#8e44ad', dark: '#6c3483', accent: '#bb8fce' },
+          ]
+          return colors[level % 3]
+        }
+
+        update(player, game) {
+          this.animFrame++
+
+          if (this.hitStun > 0) {
+            this.hitStun--
+            this.vy += 0.6
+            this.x += this.vx
+            this.y += this.vy
             if (this.y + this.height > game.groundY) {
-                this.y = game.groundY - this.height;
-                this.vy = -this.vy * 0.5;
+              this.y = game.groundY - this.height
+              this.vy = -this.vy * 0.5
             }
-            return;
-        }
-        
-        const dist = player.x - this.x;
-        const absDist = Math.abs(dist);
-        
-        if (absDist > 500) {
-            this.state = 'idle';
-            this.vx *= 0.9;
-        } else if (absDist > 60) {
-            this.state = 'chase';
-            this.facing = dist > 0 ? 1 : -1;
-            this.vx = this.facing * this.moveSpeed;
-        } else {
-            this.state = 'attack';
-            this.vx *= 0.5;
+            return
+          }
+
+          const dist = player.x - this.x
+          const absDist = Math.abs(dist)
+
+          if (absDist > 500) {
+            this.state = 'idle'
+            this.vx *= 0.9
+          } else if (absDist > 60) {
+            this.state = 'chase'
+            this.facing = dist > 0 ? 1 : -1
+            this.vx = this.facing * this.moveSpeed
+          } else {
+            this.state = 'attack'
+            this.vx *= 0.5
             if (this.stateTimer % 40 === 0) {
-                player.takeDamage(this.damage);
-                game.particles.emit(player.x, player.y, '#ff0000', 5, 4, 10);
+              player.takeDamage(this.damage)
+              game.particles.emit(player.x, player.y, '#ff0000', 5, 4, 10)
             }
-        }
-        
-        this.vy += 0.6;
-        this.x += this.vx;
-        this.y += this.vy;
-        
-        if (this.y + this.height > game.groundY) {
-            this.y = game.groundY - this.height;
-            this.vy = 0;
-        }
-        
-        this.stateTimer++;
-    }
-    
-    takeDamage(damage, knockbackX) {
-        this.health -= damage;
-        this.hitStun = 12;
-        this.vx = knockbackX;
-        return this.health <= 0;
-    }
-    
-    draw(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y + this.height);
-        
-        const c = this.colors;
-        const bob = Math.sin(this.animFrame * 0.15) * 2;
-        const scale = this.width / 50;
-        
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.beginPath();
-        ctx.ellipse(0, 5, 25 * scale, 8 * scale, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
-        const legOffset = this.state === 'chase' ? Math.sin(this.animFrame * 0.3) * 6 : 0;
-        ctx.strokeStyle = c.dark;
-        ctx.lineWidth = 8 * scale;
-        ctx.lineCap = 'round';
-        
-        ctx.beginPath();
-        ctx.moveTo(-10 * scale, -20);
-        ctx.lineTo((-12 + legOffset) * scale, 0);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(10 * scale, -20);
-        ctx.lineTo((12 - legOffset) * scale, 0);
-        ctx.stroke();
-        
-        const bodyY = (-45 + bob) * scale;
-        const grad = ctx.createLinearGradient(-18 * scale, bodyY, 18 * scale, bodyY + 30 * scale);
-        grad.addColorStop(0, c.body);
-        grad.addColorStop(1, c.dark);
-        ctx.fillStyle = grad;
-        ctx.fillRect(-18 * scale, bodyY, 36 * scale, 30 * scale);
-        
-        ctx.strokeStyle = c.accent;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-14 * scale, bodyY + 5 * scale, 28 * scale, 20 * scale);
-        
-        const headY = (-62 + bob) * scale;
-        ctx.fillStyle = c.accent;
-        ctx.beginPath();
-        ctx.arc(0, headY, 12 * scale, 0, Math.PI * 2);
-        ctx.fill();
-        
-        if (this.type === 'elite') {
-            ctx.fillStyle = '#ffd700';
-            ctx.beginPath();
-            ctx.moveTo(-8 * scale, headY - 8 * scale);
-            ctx.lineTo(-14 * scale, headY - 22 * scale);
-            ctx.lineTo(-3 * scale, headY - 10 * scale);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(8 * scale, headY - 8 * scale);
-            ctx.lineTo(14 * scale, headY - 22 * scale);
-            ctx.lineTo(3 * scale, headY - 10 * scale);
-            ctx.fill();
-        }
-        
-        ctx.fillStyle = '#fff';
-        const eyeX = this.facing > 0 ? 4 * scale : -4 * scale;
-        ctx.beginPath();
-        ctx.arc(eyeX, headY + 2 * scale, 4 * scale, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.fillStyle = this.type === 'elite' ? '#ffd700' : '#ff0000';
-        ctx.beginPath();
-        ctx.arc(eyeX + this.facing * 2 * scale, headY + 2 * scale, 2 * scale, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // 血条
-        const barY = (-82) * scale;
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.fillRect(-28 * scale, barY, 56 * scale, 6 * scale);
-        const healthPct = Math.max(0, this.health / this.maxHealth);
-        const barColor = healthPct > 0.6 ? '#00ff88' : healthPct > 0.3 ? '#ffaa00' : '#ff3333';
-        ctx.fillStyle = barColor;
-        ctx.fillRect(-28 * scale, barY, 56 * scale * healthPct, 6 * scale);
-        
-        ctx.restore();
-    }
-}
+          }
 
-// ==================== Boss类 ====================
-class Boss {
-    constructor(x, y, type, level) {
-        this.x = x;
-        this.y = y;
-        this.type = type;
-        this.level = level;
-        this.isBoss = true;
-        
-        this.name = type === 'destroyer' ? '毁灭者·泰坦' : '深渊之王';
-        this.maxHealth = (type === 'destroyer' ? 2500 : 4000) * (1 + level * 0.5);
-        this.health = this.maxHealth;
-        this.damage = (type === 'destroyer' ? 35 : 55) * (1 + level * 0.3);
-        
-        this.vx = 0;
-        this.vy = 0;
-        this.facing = -1;
-        
-        this.state = 'idle';
-        this.stateTimer = 0;
-        this.phase = 1;
-        this.animFrame = 0;
-        
-        this.width = 100;
-        this.height = 130;
-    }
-    
-    update(player, game) {
-        this.animFrame++;
-        
-        const healthPct = this.health / this.maxHealth;
-        if (healthPct < 0.5 && this.phase === 1) {
-            this.phase = 2;
-            this.enterPhase2(game);
+          this.vy += 0.6
+          this.x += this.vx
+          this.y += this.vy
+
+          if (this.y + this.height > game.groundY) {
+            this.y = game.groundY - this.height
+            this.vy = 0
+          }
+
+          this.stateTimer++
         }
-        
-        const dist = Math.abs(player.x - this.x);
-        
-        switch(this.state) {
+
+        takeDamage(damage, knockbackX) {
+          this.health -= damage
+          this.hitStun = 12
+          this.vx = knockbackX
+          return this.health <= 0
+        }
+
+        draw(ctx) {
+          ctx.save()
+          ctx.translate(this.x, this.y + this.height)
+
+          const c = this.colors
+          const bob = Math.sin(this.animFrame * 0.15) * 2
+          const scale = this.width / 50
+
+          ctx.fillStyle = 'rgba(0,0,0,0.3)'
+          ctx.beginPath()
+          ctx.ellipse(0, 5, 25 * scale, 8 * scale, 0, 0, Math.PI * 2)
+          ctx.fill()
+
+          const legOffset =
+            this.state === 'chase' ? Math.sin(this.animFrame * 0.3) * 6 : 0
+          ctx.strokeStyle = c.dark
+          ctx.lineWidth = 8 * scale
+          ctx.lineCap = 'round'
+
+          ctx.beginPath()
+          ctx.moveTo(-10 * scale, -20)
+          ctx.lineTo((-12 + legOffset) * scale, 0)
+          ctx.stroke()
+
+          ctx.beginPath()
+          ctx.moveTo(10 * scale, -20)
+          ctx.lineTo((12 - legOffset) * scale, 0)
+          ctx.stroke()
+
+          const bodyY = (-45 + bob) * scale
+          const grad = ctx.createLinearGradient(
+            -18 * scale,
+            bodyY,
+            18 * scale,
+            bodyY + 30 * scale,
+          )
+          grad.addColorStop(0, c.body)
+          grad.addColorStop(1, c.dark)
+          ctx.fillStyle = grad
+          ctx.fillRect(-18 * scale, bodyY, 36 * scale, 30 * scale)
+
+          ctx.strokeStyle = c.accent
+          ctx.lineWidth = 2
+          ctx.strokeRect(-14 * scale, bodyY + 5 * scale, 28 * scale, 20 * scale)
+
+          const headY = (-62 + bob) * scale
+          ctx.fillStyle = c.accent
+          ctx.beginPath()
+          ctx.arc(0, headY, 12 * scale, 0, Math.PI * 2)
+          ctx.fill()
+
+          if (this.type === 'elite') {
+            ctx.fillStyle = '#ffd700'
+            ctx.beginPath()
+            ctx.moveTo(-8 * scale, headY - 8 * scale)
+            ctx.lineTo(-14 * scale, headY - 22 * scale)
+            ctx.lineTo(-3 * scale, headY - 10 * scale)
+            ctx.fill()
+            ctx.beginPath()
+            ctx.moveTo(8 * scale, headY - 8 * scale)
+            ctx.lineTo(14 * scale, headY - 22 * scale)
+            ctx.lineTo(3 * scale, headY - 10 * scale)
+            ctx.fill()
+          }
+
+          ctx.fillStyle = '#fff'
+          const eyeX = this.facing > 0 ? 4 * scale : -4 * scale
+          ctx.beginPath()
+          ctx.arc(eyeX, headY + 2 * scale, 4 * scale, 0, Math.PI * 2)
+          ctx.fill()
+
+          ctx.fillStyle = this.type === 'elite' ? '#ffd700' : '#ff0000'
+          ctx.beginPath()
+          ctx.arc(
+            eyeX + this.facing * 2 * scale,
+            headY + 2 * scale,
+            2 * scale,
+            0,
+            Math.PI * 2,
+          )
+          ctx.fill()
+
+          // 血条
+          const barY = -82 * scale
+          ctx.fillStyle = 'rgba(0,0,0,0.6)'
+          ctx.fillRect(-28 * scale, barY, 56 * scale, 6 * scale)
+          const healthPct = Math.max(0, this.health / this.maxHealth)
+          const barColor =
+            healthPct > 0.6
+              ? '#00ff88'
+              : healthPct > 0.3
+                ? '#ffaa00'
+                : '#ff3333'
+          ctx.fillStyle = barColor
+          ctx.fillRect(-28 * scale, barY, 56 * scale * healthPct, 6 * scale)
+
+          ctx.restore()
+        }
+      }
+
+      // ==================== Boss类 ====================
+      class Boss {
+        constructor(x, y, type, level) {
+          this.x = x
+          this.y = y
+          this.type = type
+          this.level = level
+          this.isBoss = true
+
+          this.name = type === 'destroyer' ? '毁灭者·泰坦' : '深渊之王'
+          this.maxHealth =
+            (type === 'destroyer' ? 2500 : 4000) * (1 + level * 0.5)
+          this.health = this.maxHealth
+          this.damage = (type === 'destroyer' ? 35 : 55) * (1 + level * 0.3)
+
+          this.vx = 0
+          this.vy = 0
+          this.facing = -1
+
+          this.state = 'idle'
+          this.stateTimer = 0
+          this.phase = 1
+          this.animFrame = 0
+
+          this.width = 100
+          this.height = 130
+        }
+
+        update(player, game) {
+          this.animFrame++
+
+          const healthPct = this.health / this.maxHealth
+          if (healthPct < 0.5 && this.phase === 1) {
+            this.phase = 2
+            this.enterPhase2(game)
+          }
+
+          const dist = Math.abs(player.x - this.x)
+
+          switch (this.state) {
             case 'idle':
-                if (dist < 600) this.state = 'chase';
-                break;
+              if (dist < 600) this.state = 'chase'
+              break
             case 'chase':
-                this.facing = player.x > this.x ? 1 : -1;
-                if (dist > 120) {
-                    this.vx = this.facing * (this.phase === 1 ? 2.2 : 4.5);
-                } else {
-                    this.state = 'attack';
-                    this.stateTimer = 0;
-                }
-                break;
+              this.facing = player.x > this.x ? 1 : -1
+              if (dist > 120) {
+                this.vx = this.facing * (this.phase === 1 ? 2.2 : 4.5)
+              } else {
+                this.state = 'attack'
+                this.stateTimer = 0
+              }
+              break
             case 'attack':
-                this.vx *= 0.8;
-                if (this.stateTimer % 35 === 0) {
-                    if (dist < 140) {
-                        player.takeDamage(this.damage);
-                        game.screenShake = 12;
-                        game.particles.emit(player.x, player.y, '#ff0000', 8, 5, 15);
-                    }
-                    game.slash.add(this.x + this.facing * 80, this.y - 50, this.facing > 0 ? 0 : Math.PI, 180, '#ff4444', 12);
+              this.vx *= 0.8
+              if (this.stateTimer % 35 === 0) {
+                if (dist < 140) {
+                  player.takeDamage(this.damage)
+                  game.screenShake = 12
+                  game.particles.emit(player.x, player.y, '#ff0000', 8, 5, 15)
                 }
-                if (this.stateTimer > 50) {
-                    this.state = this.phase === 2 && Math.random() > 0.4 ? 'skill' : 'chase';
-                    this.stateTimer = 0;
-                }
-                break;
+                game.slash.add(
+                  this.x + this.facing * 80,
+                  this.y - 50,
+                  this.facing > 0 ? 0 : Math.PI,
+                  180,
+                  '#ff4444',
+                  12,
+                )
+              }
+              if (this.stateTimer > 50) {
+                this.state =
+                  this.phase === 2 && Math.random() > 0.4 ? 'skill' : 'chase'
+                this.stateTimer = 0
+              }
+              break
             case 'skill':
-                this.performSkill(player, game);
-                break;
+              this.performSkill(player, game)
+              break
+          }
+
+          this.vy += 0.6
+          this.x += this.vx
+          this.y += this.vy
+
+          if (this.y + this.height > game.groundY) {
+            this.y = game.groundY - this.height
+            this.vy = 0
+          }
+
+          this.x = Math.max(80, Math.min(game.width - 80, this.x))
+          this.stateTimer++
         }
-        
-        this.vy += 0.6;
-        this.x += this.vx;
-        this.y += this.vy;
-        
-        if (this.y + this.height > game.groundY) {
-            this.y = game.groundY - this.height;
-            this.vy = 0;
-        }
-        
-        this.x = Math.max(80, Math.min(game.width - 80, this.x));
-        this.stateTimer++;
-    }
-    
-    performSkill(player, game) {
-        if (this.stateTimer === 20) {
+
+        performSkill(player, game) {
+          if (this.stateTimer === 20) {
             if (this.type === 'destroyer') {
-                game.screenShake = 30;
-                game.particles.emit(this.x, this.y, '#ff6600', 50, 15, 70);
-                if (Math.abs(player.x - this.x) < 280) {
-                    player.vy = -18;
-                    player.takeDamage(this.damage * 1.5);
-                }
+              game.screenShake = 30
+              game.particles.emit(this.x, this.y, '#ff6600', 50, 15, 70)
+              if (Math.abs(player.x - this.x) < 280) {
+                player.vy = -18
+                player.takeDamage(this.damage * 1.5)
+              }
             } else {
-                game.slash.add(this.x, this.y - 60, 0, 450, '#6600ff', 25);
-                game.slash.add(this.x, this.y - 60, Math.PI/2, 450, '#6600ff', 25);
-                if (Math.abs(player.x - this.x) < 220) {
-                    player.takeDamage(this.damage * 2);
-                }
+              game.slash.add(this.x, this.y - 60, 0, 450, '#6600ff', 25)
+              game.slash.add(
+                this.x,
+                this.y - 60,
+                Math.PI / 2,
+                450,
+                '#6600ff',
+                25,
+              )
+              if (Math.abs(player.x - this.x) < 220) {
+                player.takeDamage(this.damage * 2)
+              }
             }
+          }
+          if (this.stateTimer > 45) {
+            this.state = 'chase'
+          }
         }
-        if (this.stateTimer > 45) {
-            this.state = 'chase';
-        }
-    }
-    
-    enterPhase2(game) {
-        game.showFinisherText(`${this.name} 狂暴!`);
-        game.screenShake = 35;
-        game.particles.emit(this.x, this.y - 50, '#ff0000', 60, 18, 90);
-    }
-    
-    takeDamage(damage, knockbackX) {
-        this.health -= damage;
-        this.vx = knockbackX * 0.3;
-        return this.health <= 0;
-    }
-    
-    draw(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y + this.height);
-        
-        const bob = Math.sin(this.animFrame * 0.1) * 4;
-        const isPhase2 = this.phase === 2;
-        
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
-        ctx.beginPath();
-        ctx.ellipse(0, 8, 55, 16, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
-        const legOffset = this.state === 'chase' ? Math.sin(this.animFrame * 0.2) * 10 : 0;
-        ctx.strokeStyle = isPhase2 ? '#440044' : '#2a0000';
-        ctx.lineWidth = 18;
-        ctx.lineCap = 'round';
-        
-        ctx.beginPath();
-        ctx.moveTo(-28, -45);
-        ctx.lineTo(-35 + legOffset, 0);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(28, -45);
-        ctx.lineTo(35 - legOffset, 0);
-        ctx.stroke();
-        
-        const bodyY = -100 + bob;
-        const bodyGrad = ctx.createLinearGradient(-45, bodyY, 45, bodyY + 80);
-        bodyGrad.addColorStop(0, isPhase2 ? '#8800ff' : '#660000');
-        bodyGrad.addColorStop(0.5, isPhase2 ? '#440088' : '#440000');
-        bodyGrad.addColorStop(1, isPhase2 ? '#220044' : '#220000');
-        ctx.fillStyle = bodyGrad;
-        ctx.fillRect(-45, bodyY, 90, 80);
-        
-        ctx.strokeStyle = isPhase2 ? '#ff00ff' : '#ff4444';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(-38, bodyY + 10, 76, 60);
-        
-        ctx.fillStyle = isPhase2 ? '#ff00ff' : '#ff0000';
-        ctx.shadowBlur = 35;
-        ctx.shadowColor = isPhase2 ? '#ff00ff' : '#ff0000';
-        ctx.beginPath();
-        ctx.arc(0, bodyY + 40, 14, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        
-        const headY = -130 + bob;
-        ctx.fillStyle = isPhase2 ? '#6600aa' : '#440000';
-        ctx.beginPath();
-        ctx.arc(0, headY, 22, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.fillStyle = isPhase2 ? '#aa00ff' : '#ff4444';
-        ctx.beginPath();
-        ctx.moveTo(-18, headY - 15);
-        ctx.lineTo(-40, headY - 60);
-        ctx.lineTo(-10, headY - 22);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(18, headY - 15);
-        ctx.lineTo(40, headY - 60);
-        ctx.lineTo(10, headY - 22);
-        ctx.fill();
-        
-        ctx.fillStyle = '#fff';
-        ctx.shadowBlur = 25;
-        ctx.shadowColor = isPhase2 ? '#ff00ff' : '#ff0000';
-        const eyeX = this.facing > 0 ? 10 : -10;
-        ctx.beginPath();
-        ctx.arc(eyeX, headY + 3, 7, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        
-        ctx.restore();
-    }
-}
 
-// ==================== 主游戏类 ====================
-class Game {
-    constructor() {
-        this.canvas = document.getElementById('gameCanvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.width = 1280;
-        this.height = 720;
-        this.groundY = this.height - 100;
-        
-        this.canvas.width = this.width;
-        this.canvas.height = this.height;
-        
-        this.audio = new AudioSystem();
-        this.input = new InputHandler();
-        this.particles = new ParticleSystem();
-        this.slash = new SlashEffect();
-        
-        this.player = null;
-        this.enemies = [];
-        this.boss = null;
-        
-        this.gameState = 'start';
-        this.currentLevel = 0;
-        this.kills = 0;
-        this.screenShake = 0;
-        this.frameCount = 0;
-        this.bgOffset = 0;
-        
-        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                       (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
-        
-        this.avatarImg = null;
-        
-        this.setupUI();
-        this.loadAvatar();
-    }
-    
-    loadAvatar() {
-        const img = new Image();
-        img.onload = () => { this.avatarImg = img; };
-        img.onerror = () => { this.avatarImg = null; };
-        img.src = 'cuicui.jpg';
-    }
-    
-    setupUI() {
-        // 开始按钮
-        document.getElementById('startBtn').addEventListener('click', () => {
-            this.startGame();
-        });
-        
-        // 移动端按钮
-        const addTouch = (id, code) => {
-            const btn = document.getElementById(id);
-            if (!btn) return;
-            
+        enterPhase2(game) {
+          game.showFinisherText(`${this.name} 狂暴!`)
+          game.screenShake = 35
+          game.particles.emit(this.x, this.y - 50, '#ff0000', 60, 18, 90)
+        }
+
+        takeDamage(damage, knockbackX) {
+          this.health -= damage
+          this.vx = knockbackX * 0.3
+          return this.health <= 0
+        }
+
+        draw(ctx) {
+          ctx.save()
+          ctx.translate(this.x, this.y + this.height)
+
+          const bob = Math.sin(this.animFrame * 0.1) * 4
+          const isPhase2 = this.phase === 2
+
+          ctx.fillStyle = 'rgba(0,0,0,0.4)'
+          ctx.beginPath()
+          ctx.ellipse(0, 8, 55, 16, 0, 0, Math.PI * 2)
+          ctx.fill()
+
+          const legOffset =
+            this.state === 'chase' ? Math.sin(this.animFrame * 0.2) * 10 : 0
+          ctx.strokeStyle = isPhase2 ? '#440044' : '#2a0000'
+          ctx.lineWidth = 18
+          ctx.lineCap = 'round'
+
+          ctx.beginPath()
+          ctx.moveTo(-28, -45)
+          ctx.lineTo(-35 + legOffset, 0)
+          ctx.stroke()
+          ctx.beginPath()
+          ctx.moveTo(28, -45)
+          ctx.lineTo(35 - legOffset, 0)
+          ctx.stroke()
+
+          const bodyY = -100 + bob
+          const bodyGrad = ctx.createLinearGradient(-45, bodyY, 45, bodyY + 80)
+          bodyGrad.addColorStop(0, isPhase2 ? '#8800ff' : '#660000')
+          bodyGrad.addColorStop(0.5, isPhase2 ? '#440088' : '#440000')
+          bodyGrad.addColorStop(1, isPhase2 ? '#220044' : '#220000')
+          ctx.fillStyle = bodyGrad
+          ctx.fillRect(-45, bodyY, 90, 80)
+
+          ctx.strokeStyle = isPhase2 ? '#ff00ff' : '#ff4444'
+          ctx.lineWidth = 4
+          ctx.strokeRect(-38, bodyY + 10, 76, 60)
+
+          ctx.fillStyle = isPhase2 ? '#ff00ff' : '#ff0000'
+          ctx.shadowBlur = 35
+          ctx.shadowColor = isPhase2 ? '#ff00ff' : '#ff0000'
+          ctx.beginPath()
+          ctx.arc(0, bodyY + 40, 14, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.shadowBlur = 0
+
+          const headY = -130 + bob
+          ctx.fillStyle = isPhase2 ? '#6600aa' : '#440000'
+          ctx.beginPath()
+          ctx.arc(0, headY, 22, 0, Math.PI * 2)
+          ctx.fill()
+
+          ctx.fillStyle = isPhase2 ? '#aa00ff' : '#ff4444'
+          ctx.beginPath()
+          ctx.moveTo(-18, headY - 15)
+          ctx.lineTo(-40, headY - 60)
+          ctx.lineTo(-10, headY - 22)
+          ctx.fill()
+          ctx.beginPath()
+          ctx.moveTo(18, headY - 15)
+          ctx.lineTo(40, headY - 60)
+          ctx.lineTo(10, headY - 22)
+          ctx.fill()
+
+          ctx.fillStyle = '#fff'
+          ctx.shadowBlur = 25
+          ctx.shadowColor = isPhase2 ? '#ff00ff' : '#ff0000'
+          const eyeX = this.facing > 0 ? 10 : -10
+          ctx.beginPath()
+          ctx.arc(eyeX, headY + 3, 7, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.shadowBlur = 0
+
+          ctx.restore()
+        }
+      }
+
+      // ==================== 主游戏类 ====================
+      class Game {
+        constructor() {
+          this.canvas = document.getElementById('gameCanvas')
+          this.ctx = this.canvas.getContext('2d')
+          this.width = 1280
+          this.height = 720
+          this.groundY = this.height - 100
+
+          this.canvas.width = this.width
+          this.canvas.height = this.height
+
+          this.audio = new AudioSystem()
+          this.input = new InputHandler()
+          this.particles = new ParticleSystem()
+          this.slash = new SlashEffect()
+
+          this.player = null
+          this.enemies = []
+          this.boss = null
+
+          this.gameState = 'start'
+          this.currentLevel = 0
+          this.kills = 0
+          this.screenShake = 0
+          this.frameCount = 0
+          this.bgOffset = 0
+
+          this.isMobile =
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+              navigator.userAgent,
+            ) ||
+            (window.matchMedia &&
+              window.matchMedia('(pointer: coarse)').matches)
+
+          this.avatarImg = null
+
+          this.setupUI()
+          this.loadAvatar()
+        }
+
+        loadAvatar() {
+          const img = new Image()
+          img.onload = () => {
+            this.avatarImg = img
+          }
+          img.onerror = () => {
+            this.avatarImg = null
+          }
+          img.src = './cuicui.jpg'
+        }
+
+        setupUI() {
+          // 开始按钮
+          document.getElementById('startBtn').addEventListener('click', () => {
+            this.startGame()
+          })
+
+          // 移动端按钮
+          const addTouch = (id, code) => {
+            const btn = document.getElementById(id)
+            if (!btn) return
+
             const onStart = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.input.keys[code] = true;
-                this.input.keysPressed[code] = true;
-                btn.style.transform = 'scale(0.92)';
-            };
-            
-            const onEnd = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.input.keys[code] = false;
-                btn.style.transform = 'scale(1)';
-            };
-            
-            btn.addEventListener('touchstart', onStart, { passive: false });
-            btn.addEventListener('touchend', onEnd, { passive: false });
-            btn.addEventListener('touchcancel', onEnd, { passive: false });
-            btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        };
-        
-        addTouch('btnLeft', 'ArrowLeft');
-        addTouch('btnRight', 'ArrowRight');
-        addTouch('btnAttack', 'KeyJ');
-        addTouch('btnJump', 'KeyK');
-        addTouch('btnDodge', 'KeyL');
-        addTouch('btnSkill1', 'Digit1');
-        addTouch('btnSkill2', 'Digit2');
-        addTouch('btnSkill3', 'Digit3');
-        
-        // 武器切换按钮
-        document.getElementById('weapon1').addEventListener('click', () => this.player?.switchWeapon('DUAL_BLADE', this));
-        document.getElementById('weapon2').addEventListener('click', () => this.player?.switchWeapon('DUAL_DAGGER', this));
-        document.getElementById('weapon3').addEventListener('click', () => this.player?.switchWeapon('DUAL_HOOK', this));
-    }
-    
-    startGame() {
-        this.audio.init();
-        this.gameState = 'playing';
-        document.getElementById('startScreen').style.display = 'none';
-        
-        this.currentLevel = 0;
-        this.kills = 0;
-        this.startLevel();
-        this.gameLoop();
-    }
-    
-    startLevel() {
-        const level = LEVELS[this.currentLevel];
-        
-        this.player = new Player(300, this.groundY - 150, this.avatarImg, this.isMobile);
-        this.enemies = [];
-        this.boss = null;
-        this.frameCount = 0;
-        
-        document.getElementById('levelBadge').textContent = `关卡 ${this.currentLevel + 1} - ${level.name}`;
-        document.getElementById('targetCount').textContent = level.targetKills;
-        document.getElementById('killCount').textContent = '0';
-        document.getElementById('bossBar').classList.remove('active');
-        
-        this.spawnWave();
-    }
-    
-    spawnWave() {
-        const level = LEVELS[this.currentLevel];
-        
-        // 检查是否达到击杀目标
-        if (this.kills >= level.targetKills && !this.boss) {
-            if (level.boss) {
-                this.boss = new Boss(this.width - 350, this.groundY - 200, level.boss, this.currentLevel);
-                document.getElementById('bossBar').classList.add('active');
-                document.getElementById('bossName').textContent = this.boss.name;
-                this.showFinisherText(`BOSS出现: ${this.boss.name}`);
-            } else {
-                this.nextLevel();
+              e.preventDefault()
+              e.stopPropagation()
+              this.input.keys[code] = true
+              this.input.keysPressed[code] = true
+              btn.style.transform = 'scale(0.92)'
             }
-            return;
-        }
-        
-        const count = level.enemyCount;
-        for (let i = 0; i < count; i++) {
-            const x = 600 + Math.random() * 450;
-            const isElite = Math.random() < level.eliteChance;
-            this.enemies.push(new Enemy(x, this.groundY - 100, isElite ? 'elite' : 'normal', this.currentLevel));
-        }
-    }
-    
-    nextLevel() {
-        if (this.currentLevel < LEVELS.length - 1) {
-            this.currentLevel++;
-            const transition = document.getElementById('levelTransition');
-            const title = document.getElementById('transitionTitle');
-            const desc = document.getElementById('transitionDesc');
-            
-            title.textContent = `关卡 ${this.currentLevel} 完成!`;
-            desc.textContent = `即将进入: ${LEVELS[this.currentLevel].name}`;
-            transition.classList.add('active');
-            
-            setTimeout(() => {
-                transition.classList.remove('active');
-                this.startLevel();
-            }, 2000);
-        } else {
-            this.showFinisherText('恭喜通关!');
-            setTimeout(() => location.reload(), 3000);
-        }
-    }
-    
-    onEnemyKilled() {
-        this.kills++;
-        document.getElementById('killCount').textContent = this.kills;
-        
-        const level = LEVELS[this.currentLevel];
-        const progress = Math.min(this.kills / level.targetKills * 100, 100);
-        document.getElementById('progressFill').style.width = progress + '%';
-        document.getElementById('progressText').textContent = `${this.kills}/${level.targetKills}`;
-    }
-    
-    spawnDamageNumber(x, y, value, isCrit) {
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = rect.width / this.width;
-        const scaleY = rect.height / this.height;
-        
-        const el = document.createElement('div');
-        el.className = 'damage-number';
-        el.textContent = isCrit ? value + '!' : value;
-        el.style.left = (x * scaleX) + 'px';
-        el.style.top = (y * scaleY) + 'px';
-        
-        if (isCrit) {
-            el.style.fontSize = '28px';
-            el.style.color = '#ff00ff';
-        }
-        
-        document.getElementById('ui').appendChild(el);
-        setTimeout(() => el.remove(), 800);
-    }
-    
-    showFinisherText(text) {
-        const el = document.createElement('div');
-        el.className = 'finisher-text';
-        el.textContent = text;
-        document.getElementById('ui').appendChild(el);
-        setTimeout(() => el.remove(), 2000);
-    }
-    
-    update() {
-        if (this.gameState !== 'playing') return;
-        
-        this.frameCount++;
-        this.bgOffset += 0.5;
-        
-        if (this.screenShake > 0) this.screenShake *= 0.92;
-        if (this.screenShake < 0.5) this.screenShake = 0;
-        
-        this.player.update(this.input, this);
-        
-        for (let i = this.enemies.length - 1; i >= 0; i--) {
-            const enemy = this.enemies[i];
-            enemy.update(this.player, this);
-            
-            if (enemy.health <= 0) {
-                this.particles.emit(enemy.x, enemy.y, '#ff4444', 18, 6, 30);
-                this.enemies.splice(i, 1);
-            }
-        }
-        
-        if (this.boss) {
-            this.boss.update(this.player, this);
-            if (this.boss.health <= 0) {
-                this.particles.emit(this.boss.x, this.boss.y, '#ff00ff', 50, 15, 70);
-                this.showFinisherText(`${this.boss.name} 被击败!`);
-                this.boss = null;
-                document.getElementById('bossBar').classList.remove('active');
-                this.nextLevel();
-            }
-        }
-        
-        if (this.enemies.length === 0 && !this.boss && this.frameCount % 120 === 0) {
-            this.spawnWave();
-        }
-        
-        this.particles.update();
-        this.slash.update();
-        this.updateUI();
-    }
-    
-    updateUI() {
-        const healthPct = (this.player.health / this.player.maxHealth) * 100;
-        document.getElementById('healthFill').style.width = healthPct + '%';
-        
-        const comboEl = document.getElementById('comboDisplay');
-        const comboNum = document.getElementById('comboNumber');
-        
-        if (this.player.combo > 0) {
-            comboEl.style.opacity = '1';
-            comboNum.textContent = this.player.combo;
-            comboNum.style.color = this.player.combo >= 100 ? '#ff00ff' : 
-                                   this.player.combo >= 30 ? '#00ffff' : '#ffdd00';
-        } else {
-            comboEl.style.opacity = '0';
-        }
-        
-        // 技能冷却UI
-        const skills = ['spin', 'dash', 'grab'];
-        skills.forEach((s, i) => {
-            const btn = document.getElementById('btnSkill' + (i + 1));
-            const cd = this.player.skills[s].cd;
-            if (cd > 0) {
-                btn.classList.remove('ready');
-                btn.innerHTML = `<span class="cd-text">${Math.ceil(cd/60)}</span>`;
-            } else {
-                btn.classList.add('ready');
-                btn.innerHTML = ['⚡', '💨', '💪'][i];
-            }
-        });
-        
-        // 武器激活状态
-        const weapons = ['DUAL_BLADE', 'DUAL_DAGGER', 'DUAL_HOOK'];
-        weapons.forEach((w, i) => {
-            const btn = document.getElementById('weapon' + (i + 1));
-            if (this.player.currentWeapon === w) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
-        
-        // Boss血条
-        if (this.boss) {
-            const bossPct = (this.boss.health / this.boss.maxHealth) * 100;
-            document.getElementById('bossHealthFill').style.width = bossPct + '%';
-        }
-    }
-    
-    draw() {
-        const level = LEVELS[this.currentLevel];
-        
-        // 背景
-        this.ctx.fillStyle = level.colors.bg;
-        this.ctx.fillRect(0, 0, this.width, this.height);
-        
-        this.ctx.save();
-        if (this.screenShake > 0) {
-            this.ctx.translate(
-                (Math.random() - 0.5) * this.screenShake,
-                (Math.random() - 0.5) * this.screenShake
-            );
-        }
-        
-        // 网格
-        this.ctx.strokeStyle = `rgba(${this.hexToRgb(level.colors.accent)}, 0.06)`;
-        this.ctx.lineWidth = 1;
-        const gridSize = 60;
-        const offset = this.bgOffset % gridSize;
-        
-        for (let x = -offset; x < this.width; x += gridSize) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(x, 0);
-            this.ctx.lineTo(x, this.groundY);
-            this.ctx.stroke();
-        }
-        for (let y = 0; y < this.groundY; y += gridSize) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, y);
-            this.ctx.lineTo(this.width, y);
-            this.ctx.stroke();
-        }
-        
-        // 远景
-        this.ctx.fillStyle = `rgba(${this.hexToRgb(level.colors.accent)}, 0.1)`;
-        for (let i = 0; i < 8; i++) {
-            const x = ((i * 200) - this.bgOffset * 0.3) % (this.width + 300);
-            const drawX = x < -150 ? x + this.width + 300 : x;
-            const h = 100 + i * 25;
-            this.ctx.fillRect(drawX, this.groundY - h, 120, h);
-        }
-        
-        // 地面
-        const groundGrad = this.ctx.createLinearGradient(0, this.groundY, 0, this.height);
-        groundGrad.addColorStop(0, level.colors.ground);
-        groundGrad.addColorStop(1, '#1a1a2a');
-        this.ctx.fillStyle = groundGrad;
-        this.ctx.fillRect(0, this.groundY, this.width, this.height - this.groundY);
-        
-        this.ctx.shadowBlur = 25;
-        this.ctx.shadowColor = level.colors.accent;
-        this.ctx.strokeStyle = level.colors.accent;
-        this.ctx.lineWidth = 3;
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, this.groundY);
-        this.ctx.lineTo(this.width, this.groundY);
-        this.ctx.stroke();
-        this.ctx.shadowBlur = 0;
-        
-        // 敌人
-        for (const enemy of this.enemies) {
-            enemy.draw(this.ctx);
-        }
-        
-        // Boss
-        if (this.boss) {
-            this.boss.draw(this.ctx);
-        }
-        
-        // 玩家
-        if (this.player) {
-            this.player.draw(this.ctx);
-        }
-        
-        this.slash.draw(this.ctx);
-        this.particles.draw(this.ctx);
-        
-        this.ctx.restore();
-    }
-    
-    hexToRgb(hex) {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? 
-            `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
-            '0, 255, 136';
-    }
-    
-    gameLoop() {
-        if (this.gameState !== 'playing') return;
-        
-        this.update();
-        this.draw();
-        
-        requestAnimationFrame(() => this.gameLoop());
-    }
-}
 
-// 启动
-const game = new Game();
-</script>
-</body>
+            const onEnd = (e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              this.input.keys[code] = false
+              btn.style.transform = 'scale(1)'
+            }
+
+            btn.addEventListener('touchstart', onStart, { passive: false })
+            btn.addEventListener('touchend', onEnd, { passive: false })
+            btn.addEventListener('touchcancel', onEnd, { passive: false })
+            btn.addEventListener('mousedown', (e) => {
+              e.preventDefault()
+            })
+          }
+
+          addTouch('btnLeft', 'ArrowLeft')
+          addTouch('btnRight', 'ArrowRight')
+          addTouch('btnAttack', 'KeyJ')
+          addTouch('btnJump', 'KeyK')
+          addTouch('btnDodge', 'KeyL')
+          addTouch('btnSkill1', 'Digit1')
+          addTouch('btnSkill2', 'Digit2')
+          addTouch('btnSkill3', 'Digit3')
+
+          // 武器切换按钮
+          document
+            .getElementById('weapon1')
+            .addEventListener('click', () =>
+              this.player?.switchWeapon('DUAL_BLADE', this),
+            )
+          document
+            .getElementById('weapon2')
+            .addEventListener('click', () =>
+              this.player?.switchWeapon('DUAL_DAGGER', this),
+            )
+          document
+            .getElementById('weapon3')
+            .addEventListener('click', () =>
+              this.player?.switchWeapon('DUAL_HOOK', this),
+            )
+        }
+
+        startGame() {
+          this.audio.init()
+          this.gameState = 'playing'
+          document.getElementById('startScreen').style.display = 'none'
+
+          this.currentLevel = 0
+          this.kills = 0
+          this.startLevel()
+          this.gameLoop()
+        }
+
+        startLevel() {
+          const level = LEVELS[this.currentLevel]
+
+          this.player = new Player(
+            300,
+            this.groundY - 150,
+            this.avatarImg,
+            this.isMobile,
+          )
+          this.enemies = []
+          this.boss = null
+          this.frameCount = 0
+
+          document.getElementById('levelBadge').textContent =
+            `关卡 ${this.currentLevel + 1} - ${level.name}`
+          document.getElementById('targetCount').textContent = level.targetKills
+          document.getElementById('killCount').textContent = '0'
+          document.getElementById('bossBar').classList.remove('active')
+
+          this.spawnWave()
+        }
+
+        spawnWave() {
+          const level = LEVELS[this.currentLevel]
+
+          // 检查是否达到击杀目标
+          if (this.kills >= level.targetKills && !this.boss) {
+            if (level.boss) {
+              this.boss = new Boss(
+                this.width - 350,
+                this.groundY - 200,
+                level.boss,
+                this.currentLevel,
+              )
+              document.getElementById('bossBar').classList.add('active')
+              document.getElementById('bossName').textContent = this.boss.name
+              this.showFinisherText(`BOSS出现: ${this.boss.name}`)
+            } else {
+              this.nextLevel()
+            }
+            return
+          }
+
+          const count = level.enemyCount
+          for (let i = 0; i < count; i++) {
+            const x = 600 + Math.random() * 450
+            const isElite = Math.random() < level.eliteChance
+            this.enemies.push(
+              new Enemy(
+                x,
+                this.groundY - 100,
+                isElite ? 'elite' : 'normal',
+                this.currentLevel,
+              ),
+            )
+          }
+        }
+
+        nextLevel() {
+          if (this.currentLevel < LEVELS.length - 1) {
+            this.currentLevel++
+            const transition = document.getElementById('levelTransition')
+            const title = document.getElementById('transitionTitle')
+            const desc = document.getElementById('transitionDesc')
+
+            title.textContent = `关卡 ${this.currentLevel} 完成!`
+            desc.textContent = `即将进入: ${LEVELS[this.currentLevel].name}`
+            transition.classList.add('active')
+
+            setTimeout(() => {
+              transition.classList.remove('active')
+              this.startLevel()
+            }, 2000)
+          } else {
+            this.showFinisherText('恭喜通关!')
+            setTimeout(() => location.reload(), 3000)
+          }
+        }
+
+        onEnemyKilled() {
+          this.kills++
+          document.getElementById('killCount').textContent = this.kills
+
+          const level = LEVELS[this.currentLevel]
+          const progress = Math.min((this.kills / level.targetKills) * 100, 100)
+          document.getElementById('progressFill').style.width = progress + '%'
+          document.getElementById('progressText').textContent =
+            `${this.kills}/${level.targetKills}`
+        }
+
+        spawnDamageNumber(x, y, value, isCrit) {
+          const rect = this.canvas.getBoundingClientRect()
+          const scaleX = rect.width / this.width
+          const scaleY = rect.height / this.height
+
+          const el = document.createElement('div')
+          el.className = 'damage-number'
+          el.textContent = isCrit ? value + '!' : value
+          el.style.left = x * scaleX + 'px'
+          el.style.top = y * scaleY + 'px'
+
+          if (isCrit) {
+            el.style.fontSize = '28px'
+            el.style.color = '#ff00ff'
+          }
+
+          document.getElementById('ui').appendChild(el)
+          setTimeout(() => el.remove(), 800)
+        }
+
+        showFinisherText(text) {
+          const el = document.createElement('div')
+          el.className = 'finisher-text'
+          el.textContent = text
+          document.getElementById('ui').appendChild(el)
+          setTimeout(() => el.remove(), 2000)
+        }
+
+        update() {
+          if (this.gameState !== 'playing') return
+
+          this.frameCount++
+          this.bgOffset += 0.5
+
+          if (this.screenShake > 0) this.screenShake *= 0.92
+          if (this.screenShake < 0.5) this.screenShake = 0
+
+          this.player.update(this.input, this)
+
+          for (let i = this.enemies.length - 1; i >= 0; i--) {
+            const enemy = this.enemies[i]
+            enemy.update(this.player, this)
+
+            if (enemy.health <= 0) {
+              this.particles.emit(enemy.x, enemy.y, '#ff4444', 18, 6, 30)
+              this.enemies.splice(i, 1)
+            }
+          }
+
+          if (this.boss) {
+            this.boss.update(this.player, this)
+            if (this.boss.health <= 0) {
+              this.particles.emit(
+                this.boss.x,
+                this.boss.y,
+                '#ff00ff',
+                50,
+                15,
+                70,
+              )
+              this.showFinisherText(`${this.boss.name} 被击败!`)
+              this.boss = null
+              document.getElementById('bossBar').classList.remove('active')
+              this.nextLevel()
+            }
+          }
+
+          if (
+            this.enemies.length === 0 &&
+            !this.boss &&
+            this.frameCount % 120 === 0
+          ) {
+            this.spawnWave()
+          }
+
+          this.particles.update()
+          this.slash.update()
+          this.updateUI()
+        }
+
+        updateUI() {
+          const healthPct = (this.player.health / this.player.maxHealth) * 100
+          document.getElementById('healthFill').style.width = healthPct + '%'
+
+          const comboEl = document.getElementById('comboDisplay')
+          const comboNum = document.getElementById('comboNumber')
+
+          if (this.player.combo > 0) {
+            comboEl.style.opacity = '1'
+            comboNum.textContent = this.player.combo
+            comboNum.style.color =
+              this.player.combo >= 100
+                ? '#ff00ff'
+                : this.player.combo >= 30
+                  ? '#00ffff'
+                  : '#ffdd00'
+          } else {
+            comboEl.style.opacity = '0'
+          }
+
+          // 技能冷却UI
+          const skills = ['spin', 'dash', 'grab']
+          skills.forEach((s, i) => {
+            const btn = document.getElementById('btnSkill' + (i + 1))
+            const cd = this.player.skills[s].cd
+            if (cd > 0) {
+              btn.classList.remove('ready')
+              btn.innerHTML = `<span class="cd-text">${Math.ceil(cd / 60)}</span>`
+            } else {
+              btn.classList.add('ready')
+              btn.innerHTML = ['⚡', '💨', '💪'][i]
+            }
+          })
+
+          // 武器激活状态
+          const weapons = ['DUAL_BLADE', 'DUAL_DAGGER', 'DUAL_HOOK']
+          weapons.forEach((w, i) => {
+            const btn = document.getElementById('weapon' + (i + 1))
+            if (this.player.currentWeapon === w) {
+              btn.classList.add('active')
+            } else {
+              btn.classList.remove('active')
+            }
+          })
+
+          // Boss血条
+          if (this.boss) {
+            const bossPct = (this.boss.health / this.boss.maxHealth) * 100
+            document.getElementById('bossHealthFill').style.width =
+              bossPct + '%'
+          }
+        }
+
+        draw() {
+          const level = LEVELS[this.currentLevel]
+
+          // 背景
+          this.ctx.fillStyle = level.colors.bg
+          this.ctx.fillRect(0, 0, this.width, this.height)
+
+          this.ctx.save()
+          if (this.screenShake > 0) {
+            this.ctx.translate(
+              (Math.random() - 0.5) * this.screenShake,
+              (Math.random() - 0.5) * this.screenShake,
+            )
+          }
+
+          // 网格
+          this.ctx.strokeStyle = `rgba(${this.hexToRgb(level.colors.accent)}, 0.06)`
+          this.ctx.lineWidth = 1
+          const gridSize = 60
+          const offset = this.bgOffset % gridSize
+
+          for (let x = -offset; x < this.width; x += gridSize) {
+            this.ctx.beginPath()
+            this.ctx.moveTo(x, 0)
+            this.ctx.lineTo(x, this.groundY)
+            this.ctx.stroke()
+          }
+          for (let y = 0; y < this.groundY; y += gridSize) {
+            this.ctx.beginPath()
+            this.ctx.moveTo(0, y)
+            this.ctx.lineTo(this.width, y)
+            this.ctx.stroke()
+          }
+
+          // 远景
+          this.ctx.fillStyle = `rgba(${this.hexToRgb(level.colors.accent)}, 0.1)`
+          for (let i = 0; i < 8; i++) {
+            const x = (i * 200 - this.bgOffset * 0.3) % (this.width + 300)
+            const drawX = x < -150 ? x + this.width + 300 : x
+            const h = 100 + i * 25
+            this.ctx.fillRect(drawX, this.groundY - h, 120, h)
+          }
+
+          // 地面
+          const groundGrad = this.ctx.createLinearGradient(
+            0,
+            this.groundY,
+            0,
+            this.height,
+          )
+          groundGrad.addColorStop(0, level.colors.ground)
+          groundGrad.addColorStop(1, '#1a1a2a')
+          this.ctx.fillStyle = groundGrad
+          this.ctx.fillRect(
+            0,
+            this.groundY,
+            this.width,
+            this.height - this.groundY,
+          )
+
+          this.ctx.shadowBlur = 25
+          this.ctx.shadowColor = level.colors.accent
+          this.ctx.strokeStyle = level.colors.accent
+          this.ctx.lineWidth = 3
+          this.ctx.beginPath()
+          this.ctx.moveTo(0, this.groundY)
+          this.ctx.lineTo(this.width, this.groundY)
+          this.ctx.stroke()
+          this.ctx.shadowBlur = 0
+
+          // 敌人
+          for (const enemy of this.enemies) {
+            enemy.draw(this.ctx)
+          }
+
+          // Boss
+          if (this.boss) {
+            this.boss.draw(this.ctx)
+          }
+
+          // 玩家
+          if (this.player) {
+            this.player.draw(this.ctx)
+          }
+
+          this.slash.draw(this.ctx)
+          this.particles.draw(this.ctx)
+
+          this.ctx.restore()
+        }
+
+        hexToRgb(hex) {
+          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+          return result
+            ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+            : '0, 255, 136'
+        }
+
+        gameLoop() {
+          if (this.gameState !== 'playing') return
+
+          this.update()
+          this.draw()
+
+          requestAnimationFrame(() => this.gameLoop())
+        }
+      }
+
+      // 启动
+      const game = new Game()
+    </script>
+  </body>
 </html>
