@@ -578,54 +578,52 @@ class Car {
   }
 
   checkWallCollision(x, y, track) {
-    const hw = 18;  // 车辆碰撞半径
-    let hit = false, hitX = x, hitY = y, sparks = false;
-    let bounce = 0.6;
+    const halfW = track.roadW / 2 - 20; // 可行驶区域的半宽
+    const hw = 18; // 车辆碰撞半径
 
-    const findNearest = (pts) => {
-      let md = Infinity, mi = -1;
-      for (let i = 0; i < pts.length; i++) {
-        const d = dist(x, y, pts[i].x, pts[i].y);
-        if (d < md) { md = d; mi = i; }
-      }
-      return { d: md, i: mi };
-    };
-
-    // 检查外边界
-    const outer = findNearest(track.outer);
-    const inner = findNearest(track.inner);
-    const pathPt = track.path[findNearest(track.path).i];
-
-    if (outer.d < hw) {
-      hit = true;
-      const pt = track.outer[outer.i];
-      const prev = track.outer[(outer.i - 1 + track.outer.length) % track.outer.length];
-      const next = track.outer[(outer.i + 1) % track.outer.length];
-      const tx = next.x - prev.x, ty = next.y - prev.y;
-      const len = hypot(tx, ty) || 1;
-      const nx2 = ty / len, ny2 = -tx / len;
-      // 法线方向推到外面
-      const dist2 = Math.sqrt(hw * hw - Math.pow(outer.d - hw, 2)) + 1;
-      hitX = pt.x + nx2 * dist2;
-      hitY = pt.y + ny2 * dist2;
-      sparkChance: if (outer.d < hw - 2) sparks = true;
+    // 找最近的路径点
+    let ni = 0, nd = Infinity;
+    for (let i = 0; i < track.path.length; i++) {
+      const d = dist(x, y, track.path[i].x, track.path[i].y);
+      if (d < nd) { nd = d; ni = i; }
     }
 
-    if (inner.d < hw) {
+    const pt = track.path[ni];
+
+    // 计算车到路径点的切线方向
+    const prev = track.path[(ni - 1 + track.path.length) % track.path.length];
+    const next = track.path[(ni + 1) % track.path.length];
+    const tx = next.x - prev.x, ty = next.y - prev.y;
+    const tlen = hypot(tx, ty) || 1;
+    // 法线方向 (指向外侧)
+    const nx2 = -ty / tlen, ny2 = tx / tlen;
+
+    // 计算车相对路径点的垂直距离
+    const dx = x - pt.x, dy = y - pt.y;
+    const perpDist = dx * nx2 + dy * ny2; // 正值=外侧，负值=内侧
+
+    const margin = hw + 5;
+    let safeX = x, safeY = y;
+    let hit = false, sparks = false;
+
+    // 检查是否超出外边界
+    if (perpDist > halfW - margin) {
       hit = true;
-      const pt = track.inner[inner.i];
-      const prev = track.inner[(inner.i - 1 + track.inner.length) % track.inner.length];
-      const next = track.inner[(inner.i + 1) % track.inner.length];
-      const tx = next.x - prev.x, ty = next.y - prev.y;
-      const len = hypot(tx, ty) || 1;
-      const nx2 = -ty / len, ny2 = tx / len;
-      const dist2 = Math.sqrt(hw * hw - Math.pow(inner.d - hw, 2)) + 1;
-      hitX = pt.x + nx2 * dist2;
-      hitY = pt.y + ny2 * dist2;
       sparks = true;
+      // 推回赛道内
+      safeX = pt.x + nx2 * (halfW - margin - 5) * Math.sign(perpDist);
+      safeY = pt.y + ny2 * (halfW - margin - 5) * Math.sign(perpDist);
     }
 
-    return { hit, safeX: hit ? clamp(hitX, 100, track.worldW - 100) : x, safeY: hit ? clamp(hitY, 100, track.worldH - 100) : y, bounce, sparks, hitX, hitY };
+    // 检查是否超出内边界
+    if (perpDist < -(halfW - margin)) {
+      hit = true;
+      sparks = true;
+      safeX = pt.x + nx2 * (-(halfW - margin) + 5);
+      safeY = pt.y + ny2 * (-(halfW - margin) + 5);
+    }
+
+    return { hit, safeX, safeY, bounce: 0.5, sparks };
   }
 
   updateAI() {
@@ -1086,6 +1084,41 @@ function drawTrack(ox, oy) {
   for (const p of t.path) ctx.lineTo(p.x, p.y);
   ctx.closePath(); ctx.stroke();
   ctx.setLineDash([]);
+
+  // 方向箭头指示
+  const arrowCount = Math.floor(t.path.length / 30); // 每30个点画一个箭头
+  const arrowColors = ['#ffff00','#ff9900','#ffcc00','#ffffff'];
+  for (let i = 0; i < t.path.length; i += arrowCount) {
+    const curr = t.path[i];
+    const next = t.path[(i + arrowCount) % t.path.length];
+    const angle = Math.atan2(next.y - curr.y, next.x - curr.x);
+    const arrowX = curr.x;
+    const arrowY = curr.y;
+
+    ctx.save();
+    ctx.translate(arrowX, arrowY);
+    ctx.rotate(angle);
+
+    // 箭头颜色
+    const ac = arrowColors[i % arrowColors.length];
+    ctx.fillStyle = ac;
+    ctx.shadowColor = ac;
+    ctx.shadowBlur = 10;
+    ctx.globalAlpha = 0.7;
+
+    // 画箭头
+    ctx.beginPath();
+    ctx.moveTo(12, 0);   // 箭头尖端
+    ctx.lineTo(-8, -7);  // 左后
+    ctx.lineTo(-4, 0);  // 凹口
+    ctx.lineTo(-8, 7);   // 右后
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
 
   // 起点
   const s0 = t.path[0], s1 = t.path[1];
